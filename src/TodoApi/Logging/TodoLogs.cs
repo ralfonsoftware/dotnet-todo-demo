@@ -3,14 +3,6 @@ using TodoApi.Domain;
 namespace TodoApi.Logging;
 
 /// <summary>
-/// Log category for Todo Item operations. Static handler classes cannot be
-/// used as a generic <see cref="Microsoft.Extensions.Logging.ILogger{T}"/>
-/// argument, so the Todos Store decorator, the HTTP slices, and the board
-/// inject this marker type instead. Every Todo Item event shares it.
-/// </summary>
-public sealed class TodoLogCategory;
-
-/// <summary>
 /// Source-generated log events for Todo Item operations. Every record carries
 /// named properties instead of interpolated text, and never includes a Todo
 /// Item title or description.

@@ -10,7 +10,7 @@ Requires the .NET 10 SDK. From the repo root:
 
 ## Layout
 
-- Feature slices: `src/TodoApi/Features/Todos/` — one file per operation, all wired in `MapTodoEndpoints.cs`. Put shared code in `Domain/`, `Storage/`, or `Contracts/`, not between slices (ADR-0001).
+- Feature slices: `src/TodoApi/Features/Todos/` — one file per operation, all wired in `TodoEndpoints.cs`. Put shared code in `Domain/`, `Storage/`, or `Contracts/`, not between slices (ADR-0001).
 - Store: `src/TodoApi/Storage/` (`ITodoStore`, in-memory only; ADR-0002).
 - Telemetry: `src/TodoApi/Telemetry/` and `src/TodoApi/Logging/`.
 - Board: `src/TodoApi/Pages/`, Razor Pages reading `ITodoStore` in-process (ADR-0005).

@@ -8,7 +8,7 @@ namespace TodoApi.Tests.Telemetry;
 /// strings; every other test and the production code reference
 /// <see cref="TodoOperation"/> and <see cref="TodoTelemetry"/> instead.
 /// </summary>
-public sealed class TodoVocabularyTests
+public sealed class TodoTelemetryTests
 {
     [Fact]
     public void Vocabulary_PinsEverySourceMeterOperationTagInstrumentUnitAndOutcome()

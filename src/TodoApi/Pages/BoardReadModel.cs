@@ -3,9 +3,6 @@ using TodoApi.Domain;
 
 namespace TodoApi.Pages;
 
-/// <summary>The current values of the Todo Item open in the inline editor.</summary>
-public sealed record TodoEditState(string Title, string Description, Priority Priority);
-
 /// <summary>
 /// Everything the board view reads: the filtered items, the counts, and the
 /// labels. Built once per request from the Todos Store.
