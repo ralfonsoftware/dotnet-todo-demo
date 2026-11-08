@@ -42,7 +42,7 @@ public static class TelemetryRegistration
 
         openTelemetry.WithTracing(tracing =>
         {
-            tracing.AddSource(TracingTodoStore.ActivitySourceName)
+            tracing.AddSource(InstrumentedTodoStore.ActivitySourceName)
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation();
 
@@ -54,7 +54,8 @@ public static class TelemetryRegistration
 
         openTelemetry.WithMetrics(metrics =>
         {
-            metrics.AddAspNetCoreInstrumentation()
+            metrics.AddMeter(InstrumentedTodoStore.MeterName)
+                .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation();
 
