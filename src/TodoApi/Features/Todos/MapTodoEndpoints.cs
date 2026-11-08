@@ -8,6 +8,7 @@ public static class TodoEndpoints
         GetTodo.Map(app);
         CreateTodo.Map(app);
         UpdateTodo.Map(app);
+        DeleteTodo.Map(app);
 
         return app;
     }

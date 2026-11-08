@@ -1,6 +1,6 @@
 # 07 — Delete todo
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 ## Scope
@@ -18,3 +18,7 @@ Blocked by: 02
 - Existing item → `204` with no body; get and delete then return `404`.
 - Unknown id → `404` problem.
 - Completed item → `204`.
+
+## Outcome
+
+`DELETE /todos/{id:int}` returns `204` or a `404` ProblemDetails; ids are not reused; completed items are deletable. Covered by 4 tests.
