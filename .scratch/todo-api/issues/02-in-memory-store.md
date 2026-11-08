@@ -1,6 +1,6 @@
 # 02 — In-memory Todos Store
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 01
 
 ## Goal
@@ -26,3 +26,7 @@ Model Todo Items and provide the thread-safe in-memory Todos Store used by every
 ## Tests
 
 No dedicated store tests: the store is exercised through every slice's HTTP tests, per the spec's test strategy. Keep `dotnet test` green via existing smoke test.
+
+## Outcome
+
+`TodoItem` carries one-way `Complete`; `ITodoStore`/`InMemoryTodoStore` registered as a singleton; ids from `Interlocked`, read-modify-write and delete guarded by a lock; store starts empty.

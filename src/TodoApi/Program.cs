@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Scalar.AspNetCore;
 using TodoApi.Features.Todos;
+using TodoApi.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadReq
 
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
+builder.Services.AddSingleton<ITodoStore, InMemoryTodoStore>();
 builder.Services.AddSingleton(TimeProvider.System);
 
 var app = builder.Build();
