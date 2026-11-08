@@ -18,22 +18,26 @@ internal readonly record struct MetricMeasurement(
 }
 
 /// <summary>
-/// Captures _measurements from every instrument on the given meter. MeterListener
-/// is process-global, so tests that use this run in a non-parallel collection
-/// and dispose the capture.
+/// Captures measurements from every instrument on the named meter that the
+/// given <see cref="IMeterFactory"/> created. Meters from other factories, such
+/// as those of parallel test hosts, are ignored, so tests that use this can run
+/// in parallel. Dispose the capture at the end of the test.
 /// </summary>
 internal sealed class MetricsCapture : IDisposable
 {
     private readonly MeterListener _listener;
     private readonly ConcurrentQueue<MetricMeasurement> _measurements = new();
 
-    public MetricsCapture(string meterName)
+    public MetricsCapture(IMeterFactory meterFactory, string meterName)
     {
+        ArgumentNullException.ThrowIfNull(meterFactory);
+
         _listener = new MeterListener
         {
             InstrumentPublished = (instrument, current) =>
             {
-                if (string.Equals(instrument.Meter.Name, meterName, StringComparison.Ordinal))
+                if (ReferenceEquals(instrument.Meter.Scope, meterFactory)
+                    && string.Equals(instrument.Meter.Name, meterName, StringComparison.Ordinal))
                 {
                     current.EnableMeasurementEvents(instrument);
                 }

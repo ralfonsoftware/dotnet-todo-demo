@@ -5,14 +5,14 @@ using TodoApi.Telemetry;
 
 namespace TodoApi.Tests.Storage;
 
-[Collection(TracingCollection.Name)]
 public sealed class InstrumentedTodoStoreMetricsTests
 {
     [Fact]
     public void Create_RecordsOneItemCreatedPerPriority()
     {
-        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
-        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
+        using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         store.Create(Drafts.Of("Low item", null, Priority.Low), DateTimeOffset.UnixEpoch);
         store.Create(Drafts.Of("Medium item", null, Priority.Medium), DateTimeOffset.UnixEpoch);
@@ -36,8 +36,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
-        using var store = new InstrumentedTodoStore(inner);
-        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
+        using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         store.Delete(item.Id).ShouldNotBeNull();
         store.Delete(item.Id).ShouldBeNull();
@@ -53,8 +54,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
-        using var store = new InstrumentedTodoStore(inner);
-        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
+        using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1))
             .ShouldBeOfType<CompletionResult.Completed>();
@@ -74,8 +76,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
     {
         var inner = new InMemoryTodoStore();
         var existing = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
-        using var store = new InstrumentedTodoStore(inner);
-        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
+        using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         store.Get(42).ShouldBeNull();
         store.Update(42, Drafts.Of("New title", null, Priority.Low)).ShouldBeNull();
@@ -116,8 +119,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
     {
         var inner = new InMemoryTodoStore();
         var seeded = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
-        using var store = new InstrumentedTodoStore(inner);
-        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
+        using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         store.GetAll();
         store.Get(seeded.Id);
@@ -158,8 +162,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
-        using var store = new InstrumentedTodoStore(inner);
-        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
+        using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         var completions = Enumerable.Range(0, 32)
             .Select(hour => Task.Run(() => store.Complete(
@@ -180,8 +185,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
         var open = inner.Create(Drafts.Of("Buy milk", null, Priority.Low), DateTimeOffset.UnixEpoch);
         var done = inner.Create(Drafts.Of("Ship the demo", null, Priority.High), DateTimeOffset.UnixEpoch);
         inner.Complete(done.Id, DateTimeOffset.UnixEpoch.AddHours(1));
-        using var store = new InstrumentedTodoStore(inner);
-        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
+        using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         metrics.ObserveGauges();
 

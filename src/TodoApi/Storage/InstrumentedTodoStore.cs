@@ -22,61 +22,60 @@ namespace TodoApi.Storage;
 /// does not increment it.
 /// </para>
 /// </remarks>
-public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
+public sealed class InstrumentedTodoStore : ITodoStore
 {
-    /// <summary>The name of the activity source that emits Todos Store spans.</summary>
-    public const string ActivitySourceName = "TodoApi.TodosStore";
-
-    /// <summary>The name of the _meter that emits Todo Item lifecycle metrics.</summary>
-    public const string MeterName = "TodoApi.Todos";
-
     private static readonly ActivitySource Source = new(TodoTelemetry.ActivitySourceName);
 
     private readonly ITodoStore _inner;
-    private readonly Meter _meter;
     private readonly Counter<long> _createdItems;
     private readonly Counter<long> _completedItems;
     private readonly Counter<long> _deletedItems;
     private readonly Counter<long> _failedOperations;
     private readonly Histogram<double> _operationDuration;
 
-    public InstrumentedTodoStore(ITodoStore inner)
+    /// <param name="inner">The Todos Store that holds the state.</param>
+    /// <param name="meterFactory">
+    /// Creates the <see cref="TodoTelemetry.MeterName"/> meter. The factory
+    /// owns the meter's lifetime and scopes it to its container.
+    /// </param>
+    public InstrumentedTodoStore(ITodoStore inner, IMeterFactory meterFactory)
     {
+        ArgumentNullException.ThrowIfNull(inner);
+        ArgumentNullException.ThrowIfNull(meterFactory);
+
         _inner = inner;
-        _meter = new Meter(TodoTelemetry.MeterName);
-        _createdItems = _meter.CreateCounter<long>(
+        var meter = meterFactory.Create(TodoTelemetry.MeterName);
+        _createdItems = meter.CreateCounter<long>(
             TodoTelemetry.Instruments.ItemsCreated,
             unit: TodoTelemetry.Units.Items,
             description: "Todo Items created, tagged by Priority.");
-        _deletedItems = _meter.CreateCounter<long>(
+        _deletedItems = meter.CreateCounter<long>(
             TodoTelemetry.Instruments.ItemsDeleted,
             unit: TodoTelemetry.Units.Items,
             description: "Todo Items deleted from the Todos Store.");
-        _completedItems = _meter.CreateCounter<long>(
+        _completedItems = meter.CreateCounter<long>(
             TodoTelemetry.Instruments.ItemsCompleted,
             unit: TodoTelemetry.Units.Items,
             description: "Todo Items that transitioned from not Done to Done.");
-        _failedOperations = _meter.CreateCounter<long>(
+        _failedOperations = meter.CreateCounter<long>(
             TodoTelemetry.Instruments.StoreFailures,
             unit: TodoTelemetry.Units.Failures,
             description: "Todos Store operations that ended without applying their change.");
-        _operationDuration = _meter.CreateHistogram<double>(
+        _operationDuration = meter.CreateHistogram<double>(
             TodoTelemetry.Instruments.OperationDuration,
             unit: TodoTelemetry.Units.Seconds,
             description: "Duration of every Todos Store operation.");
-        _meter.CreateObservableGauge(
+        meter.CreateObservableGauge(
             TodoTelemetry.Instruments.ItemsTotal,
             ObserveTotalItems,
             unit: TodoTelemetry.Units.Items,
             description: "Current number of Todo Items in the Todos Store.");
-        _meter.CreateObservableGauge(
+        meter.CreateObservableGauge(
             TodoTelemetry.Instruments.ItemsDone,
             ObserveDoneItems,
             unit: TodoTelemetry.Units.Items,
             description: "Current number of Done Todo Items in the Todos Store.");
     }
-
-    public void Dispose() => _meter.Dispose();
 
     public IReadOnlyList<TodoItem> GetAll()
     {

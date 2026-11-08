@@ -11,7 +11,8 @@ public sealed class InstrumentedTodoStoreTests
     [Fact]
     public void List_EmitsASingleFoundSpan()
     {
-        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.GetAll();
@@ -29,7 +30,8 @@ public sealed class InstrumentedTodoStoreTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", "Semi-skimmed", Priority.High), DateTimeOffset.UnixEpoch);
-        using var store = new InstrumentedTodoStore(inner);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var found = store.Get(item.Id);
@@ -46,7 +48,8 @@ public sealed class InstrumentedTodoStoreTests
     [Fact]
     public void Get_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
-        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Get(42).ShouldBeNull();
@@ -62,7 +65,8 @@ public sealed class InstrumentedTodoStoreTests
     [Fact]
     public void Create_EmitsASingleCreatedSpanWithIdAndPriority()
     {
-        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var created = store.Create(Drafts.Of("Buy milk", "Semi-skimmed", Priority.Low), DateTimeOffset.UnixEpoch);
@@ -80,7 +84,8 @@ public sealed class InstrumentedTodoStoreTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Old title", "Old description", Priority.Low), DateTimeOffset.UnixEpoch);
-        using var store = new InstrumentedTodoStore(inner);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var updated = store.Update(item.Id, Drafts.Of("New title", "New description", Priority.High));
@@ -97,7 +102,8 @@ public sealed class InstrumentedTodoStoreTests
     [Fact]
     public void Update_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
-        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Update(42, Drafts.Of("New title", null, Priority.Medium)).ShouldBeNull();
@@ -115,7 +121,8 @@ public sealed class InstrumentedTodoStoreTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", null, Priority.High), DateTimeOffset.UnixEpoch);
-        using var store = new InstrumentedTodoStore(inner);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1))
@@ -136,7 +143,8 @@ public sealed class InstrumentedTodoStoreTests
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         inner.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
-        using var store = new InstrumentedTodoStore(inner);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(2))
@@ -154,7 +162,8 @@ public sealed class InstrumentedTodoStoreTests
     [Fact]
     public void Complete_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
-        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Complete(42, DateTimeOffset.UnixEpoch)
@@ -173,7 +182,8 @@ public sealed class InstrumentedTodoStoreTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Low), DateTimeOffset.UnixEpoch);
-        using var store = new InstrumentedTodoStore(inner);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Delete(item.Id).ShouldNotBeNull();
@@ -189,7 +199,8 @@ public sealed class InstrumentedTodoStoreTests
     [Fact]
     public void Delete_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
-        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Delete(42).ShouldBeNull();
@@ -206,7 +217,8 @@ public sealed class InstrumentedTodoStoreTests
     public void EachStoreOperation_EmitsExactlyOneSpan()
     {
         var inner = new InMemoryTodoStore();
-        using var store = new InstrumentedTodoStore(inner);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var item = store.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
@@ -241,7 +253,8 @@ public sealed class InstrumentedTodoStoreTests
         const string description = "Private description 5f0c";
 
         var inner = new InMemoryTodoStore();
-        using var store = new InstrumentedTodoStore(inner);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(inner, meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var item = store.Create(Drafts.Of(title, description, Priority.High), DateTimeOffset.UnixEpoch);

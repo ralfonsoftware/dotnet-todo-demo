@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Scalar.AspNetCore;
@@ -18,7 +19,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddRazorPages();
 builder.Services.AddSingleton<InMemoryTodoStore>();
 builder.Services.AddSingleton<ITodoStore>(services =>
-    new InstrumentedTodoStore(services.GetRequiredService<InMemoryTodoStore>()));
+    new InstrumentedTodoStore(
+        services.GetRequiredService<InMemoryTodoStore>(),
+        services.GetRequiredService<IMeterFactory>()));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddTodoApiTelemetry(builder.Configuration, builder.Environment.EnvironmentName);
 

@@ -18,9 +18,10 @@ public sealed class InstrumentedTodoStoreAdapterTests
     public void EveryOperation_ForwardsToTheAdapterAndStillEmitsSpansAndDurations()
     {
         var adapter = new RecordingTodoStore();
-        using var store = new InstrumentedTodoStore(adapter);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(adapter, meterFactory);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
-        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
+        using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         var item = store.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         store.GetAll();
@@ -66,8 +67,9 @@ public sealed class InstrumentedTodoStoreAdapterTests
         var open = adapter.Create(Drafts.Of("Buy milk", null, Priority.Low), DateTimeOffset.UnixEpoch);
         var done = adapter.Create(Drafts.Of("Ship the demo", null, Priority.High), DateTimeOffset.UnixEpoch);
         adapter.Complete(done.Id, DateTimeOffset.UnixEpoch.AddHours(1));
-        using var store = new InstrumentedTodoStore(adapter);
-        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
+        using var meterFactory = TestMeters.NewFactory();
+        var store = new InstrumentedTodoStore(adapter, meterFactory);
+        using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         metrics.ObserveGauges();
 
