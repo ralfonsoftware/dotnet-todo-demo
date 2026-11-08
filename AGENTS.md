@@ -4,16 +4,18 @@ Requires the .NET 10 SDK. From the repo root:
 
 - Build: `dotnet build TodoApi.slnx`
 - Test: `dotnet test TodoApi.slnx`
+- Run: `dotnet run --project src/TodoApi` (board `http://localhost:5266/`, API `/todos`, docs `/scalar`)
+- Format check: `dotnet format TodoApi.slnx --verify-no-changes` (style rules live in `.editorconfig`; warnings are errors, see `Directory.Build.props`)
 
 `README.md` covers the run command, URLs, endpoints, telemetry, and test harness.
 
 ## Layout
 
-- Feature slices: `src/TodoApi/Features/Todos/` — one file per operation, all wired in `MapTodoEndpoints.cs`. Put shared code in `Domain/`, `Storage/`, or `Contracts/`, not between slices (ADR-0001).
+- Feature slices: `src/TodoApi/Features/Todos/` — one file per operation, all wired in `TodoEndpoints.cs`. Put shared code in `Domain/`, `Storage/`, or `Contracts/`, not between slices (ADR-0001).
 - Store: `src/TodoApi/Storage/` (`ITodoStore`, in-memory only; ADR-0002).
 - Telemetry: `src/TodoApi/Telemetry/` and `src/TodoApi/Logging/`.
 - Board: `src/TodoApi/Pages/`, Razor Pages reading `ITodoStore` in-process (ADR-0005).
-- Tests mirror `src/` under `tests/TodoApi.Tests/`.
+- Tests mirror `src/` under `tests/TodoApi.Tests/`. Shared test infrastructure (`ApiTest`, `TodoApiFactory`, `TelemetryEnabledFactory`, `MetricsCapture`, `Tracing`, `ApiJson`, `Drafts`, `TestMeters`) stays at the root of `tests/TodoApi.Tests/` because it serves every area.
 
 ## Commits
 

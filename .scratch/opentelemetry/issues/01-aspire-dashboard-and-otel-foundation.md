@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** resolved
+Status: resolved
 
 - [x] A repo-local script starts the stable `mcr.microsoft.com/aspire/dashboard` container, maps the UI to `http://localhost:18888`, OTLP/gRPC to `http://localhost:4317`, and OTLP/HTTP to `http://localhost:4318`, enables anonymous local access, prints the endpoints, stays in the foreground, and removes the container on Ctrl+C. It fails with a clear message when Docker is unavailable.
 - [x] The API exports traces, metrics, and logs over OTLP/gRPC to the Aspire Dashboard's endpoint, with service name `todo-api`, service version, and deployment environment resource attributes.

@@ -7,6 +7,11 @@ namespace TodoApi.Storage;
 /// may be called concurrently, and every timestamp is supplied by the caller
 /// and stored as given.
 /// </summary>
+/// <remarks>
+/// The registered instance is wrapped in <see cref="InstrumentedTodoStore"/>,
+/// which emits one span, one set of measurements, and one outcome log per
+/// call. Callers must not log store outcomes themselves (ADR-0006).
+/// </remarks>
 public interface ITodoStore
 {
     /// <summary>
@@ -21,18 +26,20 @@ public interface ITodoStore
     TodoItem? Get(int id);
 
     /// <summary>
-    /// Stores a new Todo Item under the next id — starting at 1, increasing by
-    /// one, and never reused after Delete — and returns it. The supplied
-    /// creation time is stored unchanged.
+    /// Stores a new Todo Item built from the validated <paramref name="draft"/>
+    /// under the next id — starting at 1, increasing by one, and never reused
+    /// after Delete — and returns it. The supplied creation time is stored
+    /// unchanged.
     /// </summary>
-    TodoItem Create(string title, string? description, Priority priority, DateTimeOffset createdAt);
+    TodoItem Create(TodoDraft draft, DateTimeOffset createdAt);
 
     /// <summary>
     /// Replaces the title, description, and priority of the Todo Item with the
-    /// given id while preserving its id, creation time, and completion state.
-    /// Returns null when it does not exist.
+    /// given id with those of the validated <paramref name="draft"/>, while
+    /// preserving its id, creation time, and completion state. Returns null
+    /// when it does not exist.
     /// </summary>
-    TodoItem? Update(int id, string title, string? description, Priority priority);
+    TodoItem? Update(int id, TodoDraft draft);
 
     /// <summary>
     /// Applies Completion to the Todo Item with the given id. Completion is

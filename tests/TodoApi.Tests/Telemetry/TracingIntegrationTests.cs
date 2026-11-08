@@ -16,7 +16,7 @@ public sealed class TracingIntegrationTests
     public async Task StoreSpan_IsAChildOfTheHttpRequestSpan()
     {
         using var capture = new ActivityCapture(
-            InstrumentedTodoStore.ActivitySourceName,
+            TodoTelemetry.ActivitySourceName,
             "Microsoft.AspNetCore");
         using var factory = new TelemetryEnabledFactory();
         using var client = factory.CreateClient();
@@ -28,7 +28,7 @@ public sealed class TracingIntegrationTests
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        var storeSpan = capture.Single(InstrumentedTodoStore.ActivitySourceName);
+        var storeSpan = capture.Single(TodoTelemetry.ActivitySourceName);
         var serverSpan = capture.From("Microsoft.AspNetCore")
             .Single(activity => activity.Kind == ActivityKind.Server);
 
@@ -52,7 +52,7 @@ public sealed class TracingIntegrationTests
     public async Task CreateCompleteDelete_ProduceOneStoreSpanNestedUnderEachHttpRequest()
     {
         using var capture = new ActivityCapture(
-            InstrumentedTodoStore.ActivitySourceName,
+            TodoTelemetry.ActivitySourceName,
             "Microsoft.AspNetCore");
         using var factory = new TelemetryEnabledFactory();
         using var client = factory.CreateClient();
@@ -75,7 +75,7 @@ public sealed class TracingIntegrationTests
         using var deleteResponse = await client.DeleteAsync($"/todos/{item.Id}", cancellationToken);
         deleteResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        var storeSpans = capture.From(InstrumentedTodoStore.ActivitySourceName);
+        var storeSpans = capture.From(TodoTelemetry.ActivitySourceName);
         storeSpans.Count.ShouldBe(3);
         storeSpans[0].GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Create.Name);
         storeSpans[1].GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Complete.Name);

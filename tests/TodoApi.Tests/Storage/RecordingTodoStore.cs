@@ -12,44 +12,44 @@ namespace TodoApi.Tests.Storage;
 /// </summary>
 internal sealed class RecordingTodoStore : ITodoStore
 {
-    private readonly InMemoryTodoStore inner = new();
-    private readonly ConcurrentQueue<string> calls = new();
+    private readonly InMemoryTodoStore _inner = new();
+    private readonly ConcurrentQueue<string> _calls = new();
 
-    public IReadOnlyList<string> Calls => calls.ToArray();
+    public IReadOnlyList<string> Calls => _calls.ToArray();
 
     public IReadOnlyList<TodoItem> GetAll()
     {
-        calls.Enqueue(TodoOperation.List.Name);
-        return inner.GetAll();
+        _calls.Enqueue(TodoOperation.List.Name);
+        return _inner.GetAll();
     }
 
     public TodoItem? Get(int id)
     {
-        calls.Enqueue(TodoOperation.Get.Name);
-        return inner.Get(id);
+        _calls.Enqueue(TodoOperation.Get.Name);
+        return _inner.Get(id);
     }
 
-    public TodoItem Create(string title, string? description, Priority priority, DateTimeOffset createdAt)
+    public TodoItem Create(TodoDraft draft, DateTimeOffset createdAt)
     {
-        calls.Enqueue(TodoOperation.Create.Name);
-        return inner.Create(title, description, priority, createdAt);
+        _calls.Enqueue(TodoOperation.Create.Name);
+        return _inner.Create(draft, createdAt);
     }
 
-    public TodoItem? Update(int id, string title, string? description, Priority priority)
+    public TodoItem? Update(int id, TodoDraft draft)
     {
-        calls.Enqueue(TodoOperation.Update.Name);
-        return inner.Update(id, title, description, priority);
+        _calls.Enqueue(TodoOperation.Update.Name);
+        return _inner.Update(id, draft);
     }
 
     public CompletionResult Complete(int id, DateTimeOffset completedAt)
     {
-        calls.Enqueue(TodoOperation.Complete.Name);
-        return inner.Complete(id, completedAt);
+        _calls.Enqueue(TodoOperation.Complete.Name);
+        return _inner.Complete(id, completedAt);
     }
 
     public TodoItem? Delete(int id)
     {
-        calls.Enqueue(TodoOperation.Delete.Name);
-        return inner.Delete(id);
+        _calls.Enqueue(TodoOperation.Delete.Name);
+        return _inner.Delete(id);
     }
 }

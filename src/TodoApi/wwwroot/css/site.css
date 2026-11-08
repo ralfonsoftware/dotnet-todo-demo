@@ -3,6 +3,16 @@
    Light/dark themes, flat design with soft depth, Plus Jakarta Sans.
    ------------------------------------------------------------------ */
 
+/* Plus Jakarta Sans (SIL OFL 1.1, see /fonts/OFL.txt), served from this app so
+   the board makes no third-party requests and renders offline. */
+@font-face {
+    font-family: "Plus Jakarta Sans";
+    src: url("../fonts/PlusJakartaSans-Variable.woff2") format("woff2");
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+}
+
 :root {
     color-scheme: light;
 

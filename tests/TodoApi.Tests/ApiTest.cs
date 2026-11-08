@@ -31,7 +31,7 @@ public abstract class ApiTest : IDisposable
         string title = "Seeded todo",
         string? description = null,
         Priority priority = Priority.Medium) =>
-        Store.Create(title, description, priority, Now);
+        Store.Create(Drafts.Of(title, description, priority), Now);
 
     protected TodoItem SeedCompleted(
         string title = "Seeded todo",
@@ -59,5 +59,6 @@ public abstract class ApiTest : IDisposable
     {
         Client.Dispose();
         Factory.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

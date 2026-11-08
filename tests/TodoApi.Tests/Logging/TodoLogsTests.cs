@@ -290,7 +290,7 @@ public sealed class TodoLogsTests : IDisposable
     }
 
     private TodoItem Seed(string title = "Seeded todo", Priority priority = Priority.Medium) =>
-        _store.Create(title, null, priority, TodoApiFactory.StartTime);
+        _store.Create(Drafts.Of(title, priority: priority), TodoApiFactory.StartTime);
 
     private CapturedLogRecord SingleLog(int eventId) =>
         _factory.Logs.Records.Where(record => record.EventId.Id == eventId).ShouldHaveSingleItem();

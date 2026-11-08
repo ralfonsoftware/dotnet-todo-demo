@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — Trace Todos Store operations (extends the same store instrumentation seam)
 
-**Status:** resolved
+Status: resolved
 
 - [x] Counters record created items by Priority, completed items, and deleted items, incrementing exactly once per successful mutation.
 - [x] The completion counter increments only when a previously not-Done Todo Item becomes Done; replaying a Completion does not double count.

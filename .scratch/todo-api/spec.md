@@ -1,6 +1,6 @@
 # Todo API
 
-Status: ready-for-agent
+Status: resolved
 Type: feature
 
 A minimal, in-memory REST API for tracking Todo Items through to completion, built as a demo of vertical-slice architecture on .NET 10.

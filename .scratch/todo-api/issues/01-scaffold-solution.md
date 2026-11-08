@@ -12,7 +12,7 @@ Create the solution, projects, and the application shell every slice plugs into.
 - `TodoApi.slnx` at the repo root, `src/TodoApi/`, `tests/TodoApi.Tests/`, project reference from tests to app.
 - `.gitignore` for .NET build output and IDE state.
 - `Program.cs`: camel-case JSON defaults, `JsonStringEnumConverter<Priority>` (camel-case names, integers rejected), `AddProblemDetails`, `RouteHandlerOptions.ThrowOnBadRequest = false`, `TimeProvider.System`, `AddOpenApi` + `MapOpenApi`, `MapScalarApiReference`.
-- Empty `Features/Todos/MapTodoEndpoints.cs` extension, ready for slices.
+- Empty `MapTodoEndpoints` extension (now in `Features/Todos/TodoEndpoints.cs`), ready for slices.
 - Test harness: `TodoApiFactory` (`WebApplicationFactory<Program>`) with a `FakeTimeProvider` fixed to `2026-11-08T11:16:00+00:00` and a fresh `ITodoStore` per factory; shared JSON options for deserialising responses.
 - Smoke test: app boots and `GET /openapi/v1.json` returns `200`.
 

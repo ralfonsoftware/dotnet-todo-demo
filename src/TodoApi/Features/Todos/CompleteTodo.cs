@@ -1,9 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Contracts;
-using TodoApi.Logging;
 using TodoApi.Storage;
-using TodoApi.Telemetry;
 
 namespace TodoApi.Features.Todos;
 
@@ -18,23 +16,12 @@ internal static class CompleteTodo
     private static Results<Ok<TodoResponse>, ProblemHttpResult> Complete(
         int id,
         ITodoStore store,
-        TimeProvider clock,
-        ILogger<TodoLogCategory> logger)
-    {
-        var result = store.Complete(id, clock.GetUtcNow());
-
-        switch (result)
+        TimeProvider clock) =>
+        store.Complete(id, clock.GetUtcNow()) switch
         {
-            case CompletionResult.NotFound:
-                return TodoResults.NotFound(logger, id, TodoOperation.Complete);
-            case CompletionResult.Completed completed:
-                TodoLogs.CompleteSucceeded(logger, TodoOperation.Complete.Name, completed.Item.Id, completed.Item.Priority);
-                return TypedResults.Ok(TodoResponse.From(completed.Item));
-            case CompletionResult.AlreadyDone alreadyDone:
-                TodoLogs.CompleteAlreadyDone(logger, TodoOperation.Complete.Name, alreadyDone.Item.Id);
-                return TypedResults.Ok(TodoResponse.From(alreadyDone.Item));
-            default:
-                throw new UnreachableException();
-        }
-    }
+            CompletionResult.NotFound => TodoResults.NotFound(),
+            CompletionResult.Completed completed => TypedResults.Ok(TodoResponse.From(completed.Item)),
+            CompletionResult.AlreadyDone alreadyDone => TypedResults.Ok(TodoResponse.From(alreadyDone.Item)),
+            _ => throw new UnreachableException()
+        };
 }

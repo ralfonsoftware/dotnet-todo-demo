@@ -18,38 +18,42 @@ internal readonly record struct MetricMeasurement(
 }
 
 /// <summary>
-/// Captures measurements from every instrument on the given meter. MeterListener
-/// is process-global, so tests that use this run in a non-parallel collection
-/// and dispose the capture.
+/// Captures measurements from every instrument on the named meter that the
+/// given <see cref="IMeterFactory"/> created. Meters from other factories, such
+/// as those of parallel test hosts, are ignored, so tests that use this can run
+/// in parallel. Dispose the capture at the end of the test.
 /// </summary>
 internal sealed class MetricsCapture : IDisposable
 {
-    private readonly MeterListener listener;
-    private readonly ConcurrentQueue<MetricMeasurement> measurements = new();
+    private readonly MeterListener _listener;
+    private readonly ConcurrentQueue<MetricMeasurement> _measurements = new();
 
-    public MetricsCapture(string meterName)
+    public MetricsCapture(IMeterFactory meterFactory, string meterName)
     {
-        listener = new MeterListener
+        ArgumentNullException.ThrowIfNull(meterFactory);
+
+        _listener = new MeterListener
         {
             InstrumentPublished = (instrument, current) =>
             {
-                if (string.Equals(instrument.Meter.Name, meterName, StringComparison.Ordinal))
+                if (ReferenceEquals(instrument.Meter.Scope, meterFactory)
+                    && string.Equals(instrument.Meter.Name, meterName, StringComparison.Ordinal))
                 {
                     current.EnableMeasurementEvents(instrument);
                 }
             }
         };
 
-        listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
+        _listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
             Record(instrument, value, tags));
-        listener.SetMeasurementEventCallback<double>((instrument, value, tags, _) =>
+        _listener.SetMeasurementEventCallback<double>((instrument, value, tags, _) =>
             Record(instrument, value, tags));
 
-        listener.Start();
+        _listener.Start();
     }
 
     public IReadOnlyList<MetricMeasurement> All(string instrumentName) =>
-        measurements
+        _measurements
             .Where(measurement => string.Equals(
                 measurement.InstrumentName, instrumentName, StringComparison.Ordinal))
             .ToArray();
@@ -61,7 +65,7 @@ internal sealed class MetricsCapture : IDisposable
         return matching[0];
     }
 
-    public void ObserveGauges() => listener.RecordObservableInstruments();
+    public void ObserveGauges() => _listener.RecordObservableInstruments();
 
     private void Record<T>(
         Instrument instrument,
@@ -75,8 +79,8 @@ internal sealed class MetricsCapture : IDisposable
             copied[tag.Key] = tag.Value;
         }
 
-        measurements.Enqueue(new MetricMeasurement(instrument.Name, instrument.Unit, value, copied));
+        _measurements.Enqueue(new MetricMeasurement(instrument.Name, instrument.Unit, value, copied));
     }
 
-    public void Dispose() => listener.Dispose();
+    public void Dispose() => _listener.Dispose();
 }

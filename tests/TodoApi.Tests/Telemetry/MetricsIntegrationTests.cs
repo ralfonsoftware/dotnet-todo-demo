@@ -1,21 +1,22 @@
+using System.Diagnostics.Metrics;
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using TodoApi.Contracts;
-using TodoApi.Storage;
 using TodoApi.Telemetry;
 
 namespace TodoApi.Tests.Telemetry;
 
-[Collection(TracingCollection.Name)]
 public sealed class MetricsIntegrationTests
 {
     [Fact]
     public async Task CreateCompleteDelete_PublishLifecycleMetricsThroughRealRequests()
     {
-        using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
         using var factory = new TelemetryEnabledFactory();
         using var client = factory.CreateClient();
+        using var metrics = new MetricsCapture(
+            factory.Services.GetRequiredService<IMeterFactory>(), TodoTelemetry.MeterName);
         var cancellationToken = TestContext.Current.CancellationToken;
 
         using var createResponse = await client.PostAsJsonAsync(

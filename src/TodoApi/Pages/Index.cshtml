@@ -5,7 +5,7 @@
 }
 
 <section class="intro">
-    <p class="eyebrow">@Model.TodayLabel</p>
+    <p class="eyebrow">@Model.Board.TodayLabel</p>
     <div class="intro-row">
         <div class="intro-copy">
             <h1>Today</h1>
@@ -13,15 +13,15 @@
         </div>
 
         <div class="day-meter" role="img"
-             aria-label="@Model.DoneCount of @Model.TotalCount todos done, @Model.PercentDone percent">
+             aria-label="@Model.Board.DoneCount of @Model.Board.TotalCount todos done, @Model.Board.PercentDone percent">
             <svg class="ring" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
                 <circle class="ring-track" cx="24" cy="24" r="19" pathLength="100" />
                 <circle class="ring-value" cx="24" cy="24" r="19" pathLength="100"
-                        stroke-dasharray="100" stroke-dashoffset="@(100 - Model.PercentDone)" />
+                        stroke-dasharray="100" stroke-dashoffset="@(100 - Model.Board.PercentDone)" />
             </svg>
             <div class="day-meter-copy">
-                <strong>@Model.PercentDone%</strong>
-                <span>@Model.DoneCount of @Model.TotalCount done</span>
+                <strong>@Model.Board.PercentDone%</strong>
+                <span>@Model.Board.DoneCount of @Model.Board.TotalCount done</span>
             </div>
         </div>
     </div>
@@ -30,12 +30,12 @@
 <section class="composer" id="new" aria-labelledby="composer-title">
     <h2 class="sr-only" id="composer-title">Add a todo</h2>
 
-    <form method="post" asp-page-handler="Create" asp-route-view="@Model.Filter" class="composer-form">
+    <form method="post" asp-page-handler="Create" asp-route-view="@Model.FilterValue" class="composer-form">
         <div class="composer-row">
             <div class="composer-field">
                 <label class="sr-only" asp-for="NewTitle">Todo title</label>
                 <input asp-for="NewTitle" id="@PresentationHooks.NewTitleId" class="composer-input"
-                       placeholder="What needs doing?" autocomplete="off" maxlength="200" required />
+                       placeholder="What needs doing?" autocomplete="off" maxlength="@TodoDraft.TitleMaxLength" required />
             </div>
             <button class="btn btn-primary" type="submit">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -62,7 +62,7 @@
                 }
             </fieldset>
 
-            <details class="notes" open="@(Model.DescriptionHasError ? "open" : null)">
+            <details class="notes" open="@Model.DescriptionHasError">
                 <summary>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -72,7 +72,7 @@
                     Add a note
                 </summary>
                 <label class="sr-only" asp-for="NewDescription">Note</label>
-                <textarea asp-for="NewDescription" class="field-input" rows="2" maxlength="2000"
+                <textarea asp-for="NewDescription" class="field-input" rows="2" maxlength="@TodoDraft.DescriptionMaxLength"
                           placeholder="A little more detail (optional)"></textarea>
                 <span class="field-error" asp-validation-for="NewDescription"></span>
             </details>
@@ -96,22 +96,17 @@
         <h2 class="sr-only" id="board-title">Todos</h2>
 
         <nav class="filters" aria-label="Filter todos">
-            <a asp-page="/Index" asp-route-view="open"
-               aria-current="@(Model.Filter == "open" ? "page" : null)">
-                Open <span class="count">@Model.OpenCount</span>
-            </a>
-            <a asp-page="/Index" asp-route-view="done"
-               aria-current="@(Model.Filter == "done" ? "page" : null)">
-                Done <span class="count">@Model.DoneCount</span>
-            </a>
-            <a asp-page="/Index" asp-route-view="all"
-               aria-current="@(Model.Filter == "all" ? "page" : null)">
-                All <span class="count">@Model.TotalCount</span>
-            </a>
+            @foreach (var filter in Enum.GetValues<BoardFilter>())
+            {
+                <a asp-page="/Index" asp-route-view="@PresentationHooks.FilterValue(filter)"
+                   aria-current="@(Model.Filter == filter ? "page" : null)">
+                    @filter <span class="count">@Model.Board.CountFor(filter)</span>
+                </a>
+            }
         </nav>
     </div>
 
-    @if (Model.Items.Count == 0)
+    @if (Model.Board.Items.Count == 0)
     {
         <div class="empty" data-testid="empty-state">
             <span class="empty-art" aria-hidden="true">
@@ -121,9 +116,9 @@
                     <path d="M8 8.5h8M8 12h5M8 15.5h6" />
                 </svg>
             </span>
-            <h3>@Model.EmptyTitle</h3>
-            <p>@Model.EmptyBody</p>
-            @if (Model.Filter != "done")
+            <h3>@Model.Board.EmptyTitle</h3>
+            <p>@Model.Board.EmptyBody</p>
+            @if (Model.Filter != BoardFilter.Done)
             {
                 <a href="#new">Add a todo</a>
             }
@@ -132,7 +127,7 @@
     else
     {
         <ul class="todo-list">
-            @foreach (var item in Model.Items)
+            @foreach (var item in Model.Board.Items)
             {
                 var isEditing = Model.EditId == item.Id;
 
@@ -141,17 +136,17 @@
                     @if (isEditing)
                     {
                         <form method="post" asp-page-handler="Update" asp-route-id="@item.Id"
-                              asp-route-view="@Model.Filter" class="edit-form">
+                              asp-route-view="@Model.FilterValue" class="edit-form">
                             <div class="edit-grid">
                                 <div class="field span-2">
                                     <label for="edit-title-@item.Id">Title</label>
                                     <input class="field-input" id="edit-title-@item.Id" name="editTitle"
-                                           value="@Model.EditTitle" maxlength="200" required autofocus />
+                                           value="@Model.EditTitle" maxlength="@TodoDraft.TitleMaxLength" required autofocus />
                                 </div>
                                 <div class="field span-2">
                                     <label for="edit-note-@item.Id">Note</label>
                                     <textarea class="field-input" id="edit-note-@item.Id" name="editDescription"
-                                              rows="2" maxlength="2000">@Model.EditDescription</textarea>
+                                              rows="2" maxlength="@TodoDraft.DescriptionMaxLength">@Model.EditDescription</textarea>
                                 </div>
                                 <div class="field span-2">
                                     <p class="field-label" id="edit-priority-label-@item.Id">Priority</p>
@@ -179,7 +174,7 @@
 
                             <div class="edit-actions">
                                 <a class="btn btn-ghost btn-sm" asp-page="/Index"
-                                   asp-route-view="@Model.Filter">Cancel</a>
+                                   asp-route-view="@Model.FilterValue">Cancel</a>
                                 <button class="btn btn-primary btn-sm" type="submit">Save changes</button>
                             </div>
                         </form>
@@ -199,7 +194,7 @@
                             else
                             {
                                 <form method="post" asp-page-handler="Complete" asp-route-id="@item.Id"
-                                      asp-route-view="@Model.Filter" class="check-form">
+                                      asp-route-view="@Model.FilterValue" class="check-form">
                                     <button type="submit" class="check" aria-label="Mark “@item.Title” as done"
                                             title="Mark as done">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -234,8 +229,8 @@
                                     {
                                         <span class="meta-text">
                                             Done
-                                            <time datetime="@completedAt.ToString("O", CultureInfo.InvariantCulture)">
-                                                @completedAt.ToString("d MMM", CultureInfo.InvariantCulture)
+                                            <time datetime="@BoardDates.Machine(completedAt)">
+                                                @BoardDates.ShortDay(completedAt, Model.TimeZone)
                                             </time>
                                         </span>
                                     }
@@ -243,8 +238,8 @@
                                     {
                                         <span class="meta-text">
                                             Added
-                                            <time datetime="@item.CreatedAt.ToString("O", CultureInfo.InvariantCulture)">
-                                                @item.CreatedAt.ToString("d MMM", CultureInfo.InvariantCulture)
+                                            <time datetime="@BoardDates.Machine(item.CreatedAt)">
+                                                @BoardDates.ShortDay(item.CreatedAt, Model.TimeZone)
                                             </time>
                                         </span>
                                     }
@@ -252,7 +247,7 @@
                             </div>
 
                             <div class="todo-actions">
-                                <a class="icon-btn" asp-page="/Index" asp-route-view="@Model.Filter"
+                                <a class="icon-btn" asp-page="/Index" asp-route-view="@Model.FilterValue"
                                    asp-route-edit="@item.Id" aria-label="Edit “@item.Title”" title="Edit">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                                          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
@@ -263,7 +258,7 @@
                                 </a>
 
                                 <form method="post" asp-page-handler="Delete" asp-route-id="@item.Id"
-                                      asp-route-view="@Model.Filter"
+                                      asp-route-view="@Model.FilterValue"
                                       data-confirm="Delete “@item.Title”? This can't be undone.">
                                     <button type="submit" class="icon-btn icon-btn--danger"
                                             aria-label="Delete “@item.Title”" title="Delete">

@@ -407,6 +407,74 @@ public sealed class TodoPageTests : ApiTest
     }
 
     [Fact]
+    public async Task Forms_TakeTheirLengthLimitsFromTodoDraft()
+    {
+        var item = Seed("Editable todo");
+
+        var html = await GetHtmlAsync($"/?edit={item.Id}");
+
+        foreach (var titleId in new[] { "NewTitle", $"edit-title-{item.Id}" })
+        {
+            ControlAttribute(html, titleId, "maxlength").ShouldBe($"{TodoDraft.TitleMaxLength}");
+        }
+
+        foreach (var noteId in new[] { "NewDescription", $"edit-note-{item.Id}" })
+        {
+            ControlAttribute(html, noteId, "maxlength").ShouldBe($"{TodoDraft.DescriptionMaxLength}");
+        }
+    }
+
+    [Fact]
+    public async Task Home_WithUnknownView_ShowsTheOpenFilter()
+    {
+        Seed("Open task");
+        var done = Seed("Done task");
+        Store.Complete(done.Id, Now);
+
+        var html = await GetHtmlAsync("/?view=bogus");
+
+        html.ShouldContain("Open task");
+        html.ShouldNotContain("Done task");
+        Regex.IsMatch(html, @"<a aria-current=""page"" href=""/\?view=open"">").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Create_WithOverlongDescription_KeepsTheNoteOpen()
+    {
+        var response = await PostFormAsync("Create", new()
+        {
+            ["NewTitle"] = "Has a long note",
+            ["NewDescription"] = new string('x', 2001),
+            ["new-priority-medium"] = "Medium"
+        });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        html.ShouldContain("<details class=\"notes\" open=\"open\">");
+    }
+
+    [Fact]
+    public async Task Home_FormatsItemDatesInTheSameZoneAsTheTodayLabel()
+    {
+        // 2026-11-08T11:16Z is already 9 November at UTC+14.
+        Factory.Clock.SetLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Pacific/Kiritimati"));
+        var open = Seed("Open in Kiritimati");
+        var done = Seed("Done in Kiritimati");
+        Store.Complete(done.Id, Now);
+
+        var html = await GetHtmlAsync("/?view=all");
+
+        html.ShouldContain("Monday, 9 November");
+        // Razor encodes the attribute's "+" as "&#x2B;".
+        Regex.IsMatch(html, @"Added\s*<time datetime=""2026-11-08T11:16:00\.0000000(\+|&#x2B;)00:00"">\s*9 Nov\s*</time>")
+            .ShouldBeTrue("The Added date should be local while the datetime attribute stays UTC.");
+        Regex.IsMatch(html, @"Done\s*<time datetime=""[^""]+"">\s*9 Nov\s*</time>")
+            .ShouldBeTrue("The Done date should be local.");
+        html.ShouldNotContain("8 Nov");
+        open.CreatedAt.ShouldBe(Now);
+    }
+
+    [Fact]
     public async Task Post_WithoutAntiforgeryToken_IsRejected()
     {
         var response = await Client.PostAsync(
@@ -473,7 +541,10 @@ public sealed class TodoPageTests : ApiTest
         response.Headers.Location.ShouldNotBeNull().ToString().ShouldBe($"/?view={view}");
     }
 
-    private static string ControlName(string html, string controlId)
+    private static string ControlName(string html, string controlId) =>
+        ControlAttribute(html, controlId, "name");
+
+    private static string ControlAttribute(string html, string controlId, string attribute)
     {
         var tag = Regex.Match(
             html,
@@ -483,12 +554,12 @@ public sealed class TodoPageTests : ApiTest
         tag.Success.ShouldBeTrue(
             $"The page should render an input or textarea whose id is \u201c{controlId}\u201d.");
 
-        var name = Regex.Match(tag.Value, @"\sname=""(?<name>[^""]+)""");
+        var value = Regex.Match(tag.Value, $@"\s{Regex.Escape(attribute)}=""(?<value>[^""]+)""");
 
-        name.Success.ShouldBeTrue(
-            $"The control with id \u201c{controlId}\u201d should have a name attribute.");
+        value.Success.ShouldBeTrue(
+            $"The control with id \u201c{controlId}\u201d should have a {attribute} attribute.");
 
-        return name.Groups["name"].Value;
+        return value.Groups["value"].Value;
     }
 
     private static string AntiforgeryToken(string html)

@@ -38,18 +38,10 @@ internal static class UpdateTodo
             return TypedResults.ValidationProblem(errors);
         }
 
-        var item = store.Update(
-            id,
-            draft.Title,
-            draft.Description,
-            draft.Priority);
+        var item = store.Update(id, draft);
 
-        if (item is null)
-        {
-            return TodoResults.NotFound(logger, id, TodoOperation.Update);
-        }
-
-        TodoLogs.UpdateSucceeded(logger, TodoOperation.Update.Name, item.Id, item.Priority);
-        return TypedResults.Ok(TodoResponse.From(item));
+        return item is null
+            ? TodoResults.NotFound()
+            : TypedResults.Ok(TodoResponse.From(item));
     }
 }
