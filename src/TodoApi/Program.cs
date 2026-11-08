@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Scalar.AspNetCore;
 using TodoApi.Features.Todos;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<ITodoStore, InMemoryTodoStore>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddTodoApiTelemetry(builder.Configuration, builder.Environment.EnvironmentName);
 
 var app = builder.Build();
 
