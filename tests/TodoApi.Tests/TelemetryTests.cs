@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
@@ -41,6 +42,15 @@ public sealed class TelemetryTests
 
         options.IncludeScopes.ShouldBeTrue();
         options.IncludeFormattedMessage.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ConsoleLogging_RemainsEnabled()
+    {
+        using var factory = new TodoApiFactory();
+
+        factory.Services.GetServices<ILoggerProvider>()
+            .ShouldContain(provider => provider is ConsoleLoggerProvider);
     }
 
     [Fact]

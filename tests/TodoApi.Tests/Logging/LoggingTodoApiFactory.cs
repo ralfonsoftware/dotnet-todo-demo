@@ -16,8 +16,6 @@ internal sealed class LoggingTodoApiFactory : WebApplicationFactory<Program>
 {
     public CapturingLoggerProvider Logs { get; } = new();
 
-    public FakeTimeProvider Clock { get; } = new(TodoApiFactory.StartTime);
-
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -29,7 +27,7 @@ internal sealed class LoggingTodoApiFactory : WebApplicationFactory<Program>
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<TimeProvider>();
-            services.AddSingleton<TimeProvider>(Clock);
+            services.AddSingleton<TimeProvider>(new FakeTimeProvider(TodoApiFactory.StartTime));
         });
     }
 }

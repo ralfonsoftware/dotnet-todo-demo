@@ -239,6 +239,9 @@ public sealed class TodoLogsTests : IDisposable
         using var listed = await _client.GetAsync("/todos", TestContext.Current.CancellationToken);
         listed.StatusCode.ShouldBe(HttpStatusCode.OK);
 
+        using var deleted = await _client.DeleteAsync($"/todos/{item.Id}", TestContext.Current.CancellationToken);
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
         _factory.Logs.Records.ShouldNotBeEmpty();
 
         foreach (var record in _factory.Logs.Records)
