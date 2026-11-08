@@ -30,7 +30,7 @@
 <section class="composer" id="new" aria-labelledby="composer-title">
     <h2 class="sr-only" id="composer-title">Add a todo</h2>
 
-    <form method="post" asp-page-handler="Create" asp-route-view="@Model.Filter" class="composer-form">
+    <form method="post" asp-page-handler="Create" asp-route-view="@Model.FilterValue" class="composer-form">
         <div class="composer-row">
             <div class="composer-field">
                 <label class="sr-only" asp-for="NewTitle">Todo title</label>
@@ -62,7 +62,7 @@
                 }
             </fieldset>
 
-            <details class="notes" open="@(Model.DescriptionHasError ? "open" : null)">
+            <details class="notes" open="@Model.DescriptionHasError">
                 <summary>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -96,18 +96,13 @@
         <h2 class="sr-only" id="board-title">Todos</h2>
 
         <nav class="filters" aria-label="Filter todos">
-            <a asp-page="/Index" asp-route-view="open"
-               aria-current="@(Model.Filter == "open" ? "page" : null)">
-                Open <span class="count">@Model.Board.OpenCount</span>
-            </a>
-            <a asp-page="/Index" asp-route-view="done"
-               aria-current="@(Model.Filter == "done" ? "page" : null)">
-                Done <span class="count">@Model.Board.DoneCount</span>
-            </a>
-            <a asp-page="/Index" asp-route-view="all"
-               aria-current="@(Model.Filter == "all" ? "page" : null)">
-                All <span class="count">@Model.Board.TotalCount</span>
-            </a>
+            @foreach (var filter in Enum.GetValues<BoardFilter>())
+            {
+                <a asp-page="/Index" asp-route-view="@PresentationHooks.FilterValue(filter)"
+                   aria-current="@(Model.Filter == filter ? "page" : null)">
+                    @filter <span class="count">@Model.Board.CountFor(filter)</span>
+                </a>
+            }
         </nav>
     </div>
 
@@ -123,7 +118,7 @@
             </span>
             <h3>@Model.Board.EmptyTitle</h3>
             <p>@Model.Board.EmptyBody</p>
-            @if (Model.Filter != "done")
+            @if (Model.Filter != BoardFilter.Done)
             {
                 <a href="#new">Add a todo</a>
             }
@@ -141,7 +136,7 @@
                     @if (isEditing)
                     {
                         <form method="post" asp-page-handler="Update" asp-route-id="@item.Id"
-                              asp-route-view="@Model.Filter" class="edit-form">
+                              asp-route-view="@Model.FilterValue" class="edit-form">
                             <div class="edit-grid">
                                 <div class="field span-2">
                                     <label for="edit-title-@item.Id">Title</label>
@@ -179,7 +174,7 @@
 
                             <div class="edit-actions">
                                 <a class="btn btn-ghost btn-sm" asp-page="/Index"
-                                   asp-route-view="@Model.Filter">Cancel</a>
+                                   asp-route-view="@Model.FilterValue">Cancel</a>
                                 <button class="btn btn-primary btn-sm" type="submit">Save changes</button>
                             </div>
                         </form>
@@ -199,7 +194,7 @@
                             else
                             {
                                 <form method="post" asp-page-handler="Complete" asp-route-id="@item.Id"
-                                      asp-route-view="@Model.Filter" class="check-form">
+                                      asp-route-view="@Model.FilterValue" class="check-form">
                                     <button type="submit" class="check" aria-label="Mark “@item.Title” as done"
                                             title="Mark as done">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -252,7 +247,7 @@
                             </div>
 
                             <div class="todo-actions">
-                                <a class="icon-btn" asp-page="/Index" asp-route-view="@Model.Filter"
+                                <a class="icon-btn" asp-page="/Index" asp-route-view="@Model.FilterValue"
                                    asp-route-edit="@item.Id" aria-label="Edit “@item.Title”" title="Edit">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                                          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
@@ -263,7 +258,7 @@
                                 </a>
 
                                 <form method="post" asp-page-handler="Delete" asp-route-id="@item.Id"
-                                      asp-route-view="@Model.Filter"
+                                      asp-route-view="@Model.FilterValue"
                                       data-confirm="Delete “@item.Title”? This can't be undone.">
                                     <button type="submit" class="icon-btn icon-btn--danger"
                                             aria-label="Delete “@item.Title”" title="Delete">

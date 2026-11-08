@@ -113,7 +113,7 @@ public sealed class TodoLogOwnershipTests : IDisposable
         token.Success.ShouldBeTrue("The page should render an antiforgery token.");
         fields["__RequestVerificationToken"] = token.Groups[1].Value;
 
-        var url = $"/?handler={handler}&view=open" + (id is null ? string.Empty : $"&id={id}");
+        var url = $"/?handler={handler}" + (id is null ? string.Empty : $"&id={id}");
         return () => _client.PostAsync(url, new FormUrlEncodedContent(fields), Token);
     }
 

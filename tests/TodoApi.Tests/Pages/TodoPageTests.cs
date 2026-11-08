@@ -407,6 +407,35 @@ public sealed class TodoPageTests : ApiTest
     }
 
     [Fact]
+    public async Task Home_WithUnknownView_ShowsTheOpenFilter()
+    {
+        Seed("Open task");
+        var done = Seed("Done task");
+        Store.Complete(done.Id, Now);
+
+        var html = await GetHtmlAsync("/?view=bogus");
+
+        html.ShouldContain("Open task");
+        html.ShouldNotContain("Done task");
+        Regex.IsMatch(html, @"<a aria-current=""page"" href=""/\?view=open"">").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Create_WithOverlongDescription_KeepsTheNoteOpen()
+    {
+        var response = await PostFormAsync("Create", new()
+        {
+            ["NewTitle"] = "Has a long note",
+            ["NewDescription"] = new string('x', 2001),
+            ["new-priority-medium"] = "Medium"
+        });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        html.ShouldContain("<details class=\"notes\" open=\"open\">");
+    }
+
+    [Fact]
     public async Task Home_FormatsItemDatesInTheSameZoneAsTheTodayLabel()
     {
         // 2026-11-08T11:16Z is already 9 November at UTC+14.

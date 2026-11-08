@@ -16,20 +16,20 @@ public sealed class IndexModel(
     TimeProvider clock,
     ILogger<TodoLogCategory> logger) : PageModel
 {
-    private const string DefaultFilter = "open";
-
     private readonly ITodoStore _store = store;
     private readonly TimeProvider _clock = clock;
     private readonly ILogger<TodoLogCategory> _logger = logger;
-    private string _filter = DefaultFilter;
     private BoardReadModel? _board;
 
+    /// <summary>The raw <c>view</c> query value. Read <see cref="Filter"/> instead.</summary>
     [BindProperty(SupportsGet = true, Name = "view")]
-    public string Filter
-    {
-        get => _filter;
-        set => _filter = NormalizeFilter(value);
-    }
+    public string? RequestedView { get; set; }
+
+    /// <summary>The board filter, parsed once from the <c>view</c> query value.</summary>
+    public BoardFilter Filter => PresentationHooks.ParseFilter(RequestedView);
+
+    /// <summary>The <c>view</c> value that keeps the current filter in links and redirects.</summary>
+    public string FilterValue => PresentationHooks.FilterValue(Filter);
 
     [BindProperty(SupportsGet = true, Name = "edit")]
     public int? EditId { get; set; }
@@ -175,9 +175,6 @@ public sealed class IndexModel(
         return BackToBoard();
     }
 
-    private static string NormalizeFilter(string? value) =>
-        value is "all" or "done" or "open" ? value : DefaultFilter;
-
     private static string[] MessagesFor(
         Dictionary<string, string[]> errors, string key) =>
         errors.TryGetValue(key, out var messages) ? messages : [];
@@ -186,5 +183,5 @@ public sealed class IndexModel(
         _board = BoardReadModel.Create(_store.GetAll(), Filter, editId: null, _clock.GetLocalNow());
 
     private RedirectToPageResult BackToBoard() =>
-        RedirectToPage("/Index", new { view = Filter });
+        RedirectToPage("/Index", new { view = FilterValue });
 }

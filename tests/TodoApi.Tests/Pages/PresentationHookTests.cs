@@ -58,6 +58,26 @@ public sealed class PresentationHookTests : ApiTest
         js.ShouldContain(PresentationHooks.NewTitleId);
     }
 
+    [Theory]
+    [InlineData(BoardFilter.Open, "open")]
+    [InlineData(BoardFilter.Done, "done")]
+    [InlineData(BoardFilter.All, "all")]
+    public void FilterValue_RoundTripsThroughParseFilter(BoardFilter filter, string value)
+    {
+        PresentationHooks.FilterValue(filter).ShouldBe(value);
+        PresentationHooks.ParseFilter(value).ShouldBe(filter);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("bogus")]
+    [InlineData("DONE")]
+    public void ParseFilter_FallsBackToOpen(string? value)
+    {
+        PresentationHooks.ParseFilter(value).ShouldBe(BoardFilter.Open);
+    }
+
     private async Task<string> GetTextAsync(string url)
     {
         using var response = await Client.GetAsync(url, TestContext.Current.CancellationToken);

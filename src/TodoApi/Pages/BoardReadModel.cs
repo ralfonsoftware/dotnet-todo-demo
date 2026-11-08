@@ -22,9 +22,18 @@ public sealed record BoardReadModel(
 {
     public int DoneCount => TotalCount - OpenCount;
 
+    /// <summary>The number of Todo Items the given filter lists.</summary>
+    public int CountFor(BoardFilter filter) =>
+        filter switch
+        {
+            BoardFilter.Done => DoneCount,
+            BoardFilter.All => TotalCount,
+            _ => OpenCount
+        };
+
     public static BoardReadModel Create(
         IReadOnlyList<TodoItem> all,
-        string filter,
+        BoardFilter filter,
         int? editId,
         DateTimeOffset now)
     {
@@ -41,8 +50,8 @@ public sealed record BoardReadModel(
 
         IReadOnlyList<TodoItem> items = filter switch
         {
-            "all" => [.. open, .. done],
-            "done" => done,
+            BoardFilter.All => [.. open, .. done],
+            BoardFilter.Done => done,
             _ => open
         };
 
@@ -54,8 +63,8 @@ public sealed record BoardReadModel(
 
         var (emptyTitle, emptyBody) = filter switch
         {
-            "done" => ("Nothing completed yet", "Finished todos will collect here. Complete one to see it."),
-            "all" => ("Your list is empty", "Add your first todo above and it will show up here."),
+            BoardFilter.Done => ("Nothing completed yet", "Finished todos will collect here. Complete one to see it."),
+            BoardFilter.All => ("Your list is empty", "Add your first todo above and it will show up here."),
             _ => ("All clear", "There is nothing left to do. Add something new when it comes to mind.")
         };
 
