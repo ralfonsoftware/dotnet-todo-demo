@@ -1,6 +1,6 @@
 # Todo API
 
-A small demo REST API for tracking Todo Items through to completion. It is built as a .NET 10 minimal API in a vertical-slice style, with an in-memory store, OpenAPI, and Scalar UI.
+A small demo REST API for tracking Todo Items through to completion. It is built as a .NET 10 minimal API in a vertical-slice style, with an in-memory store, OpenAPI, Scalar UI, and a server-rendered Razor Pages board for everyday use.
 
 ## Prerequisites
 
@@ -13,9 +13,22 @@ A small demo REST API for tracking Todo Items through to completion. It is built
 dotnet run --project src/TodoApi
 ```
 
-- API: `http://localhost:5266` (see the console output for the exact URL)
+- Todo board: `http://localhost:5266/`
+- API endpoints: `http://localhost:5266/todos` (see the console output for the exact URL)
 - Interactive docs: `http://localhost:5266/scalar`
 - OpenAPI document: `http://localhost:5266/openapi/v1.json`
+
+## Todo board
+
+The server-rendered frontend is a personal, light/dark todo board built with Razor Pages. It talks to `ITodoStore` directly, in the same process as the API, rather than making HTTP calls to itself.
+
+- Add a todo with an optional note and a Low/Medium/High Priority.
+- Filter by Open, Done, or All; Open items sort by Priority, done items by completion time.
+- Mark items done, edit them inline, or delete with confirmation.
+- Progress ring, live counts, completion toasts, and a keyboard shortcut (`N`) that focuses the composer.
+- Filter and edit state are part of the URL (`/?view=open&edit=3`), so views can be bookmarked.
+
+The board follows the same in-memory lifecycle as the API: data resets when the process restarts. See [ADR-0005](docs/adr/0005-server-rendered-razor-pages-ui.md).
 
 ## Observability
 
@@ -102,7 +115,7 @@ The gauges read the raw Todos Store on each collection, so they report the curre
 dotnet test TodoApi.slnx
 ```
 
-Tests are xUnit v3 integration tests on Microsoft.Testing.Platform, using Shouldly. Each test gets a fresh in-memory store and a clock fixed at `2026-11-08T11:16:00+00:00`.
+Tests are xUnit v3 integration tests on Microsoft.Testing.Platform, using Shouldly. Each test gets a fresh in-memory store and a clock fixed at `2026-11-08T11:16:00+00:00`. API tests cover the HTTP contract; page tests post real forms (including antiforgery tokens) through `WebApplicationFactory<Program>` and assert on the rendered HTML and resulting store state.
 
 ## Endpoints
 
@@ -158,4 +171,5 @@ curl -X POST http://localhost:5266/todos/1/complete
 - [ADR-0001: vertical slice architecture](docs/adr/0001-vertical-slice-architecture.md)
 - [ADR-0002: in-memory store](docs/adr/0002-in-memory-store.md)
 - [ADR-0003: OpenTelemetry and the Aspire Dashboard](docs/adr/0003-opentelemetry-and-aspire-dashboard.md)
+- [ADR-0005: server-rendered Razor Pages UI](docs/adr/0005-server-rendered-razor-pages-ui.md)
 - Implementation tickets: [`.scratch/todo-api/issues/`](.scratch/todo-api/issues/)
