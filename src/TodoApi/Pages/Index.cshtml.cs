@@ -69,6 +69,9 @@ public sealed class IndexModel(
 
     public string? EditError { get; private set; }
 
+    /// <summary>The zone board dates are shown in; the same one the "Today" label uses.</summary>
+    public TimeZoneInfo TimeZone => _clock.LocalTimeZone;
+
     public void OnGet()
     {
         var board = BoardReadModel.Create(_store.GetAll(), Filter, EditId, _clock.GetLocalNow());

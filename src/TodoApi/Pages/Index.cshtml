@@ -234,8 +234,8 @@
                                     {
                                         <span class="meta-text">
                                             Done
-                                            <time datetime="@completedAt.ToString("O", CultureInfo.InvariantCulture)">
-                                                @completedAt.ToString("d MMM", CultureInfo.InvariantCulture)
+                                            <time datetime="@BoardDates.Machine(completedAt)">
+                                                @BoardDates.ShortDay(completedAt, Model.TimeZone)
                                             </time>
                                         </span>
                                     }
@@ -243,8 +243,8 @@
                                     {
                                         <span class="meta-text">
                                             Added
-                                            <time datetime="@item.CreatedAt.ToString("O", CultureInfo.InvariantCulture)">
-                                                @item.CreatedAt.ToString("d MMM", CultureInfo.InvariantCulture)
+                                            <time datetime="@BoardDates.Machine(item.CreatedAt)">
+                                                @BoardDates.ShortDay(item.CreatedAt, Model.TimeZone)
                                             </time>
                                         </span>
                                     }

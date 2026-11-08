@@ -407,6 +407,27 @@ public sealed class TodoPageTests : ApiTest
     }
 
     [Fact]
+    public async Task Home_FormatsItemDatesInTheSameZoneAsTheTodayLabel()
+    {
+        // 2026-11-08T11:16Z is already 9 November at UTC+14.
+        Factory.Clock.SetLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Pacific/Kiritimati"));
+        var open = Seed("Open in Kiritimati");
+        var done = Seed("Done in Kiritimati");
+        Store.Complete(done.Id, Now);
+
+        var html = await GetHtmlAsync("/?view=all");
+
+        html.ShouldContain("Monday, 9 November");
+        // Razor encodes the attribute's "+" as "&#x2B;".
+        Regex.IsMatch(html, @"Added\s*<time datetime=""2026-11-08T11:16:00\.0000000(\+|&#x2B;)00:00"">\s*9 Nov\s*</time>")
+            .ShouldBeTrue("The Added date should be local while the datetime attribute stays UTC.");
+        Regex.IsMatch(html, @"Done\s*<time datetime=""[^""]+"">\s*9 Nov\s*</time>")
+            .ShouldBeTrue("The Done date should be local.");
+        html.ShouldNotContain("8 Nov");
+        open.CreatedAt.ShouldBe(Now);
+    }
+
+    [Fact]
     public async Task Post_WithoutAntiforgeryToken_IsRejected()
     {
         var response = await Client.PostAsync(
