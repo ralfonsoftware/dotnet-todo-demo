@@ -162,16 +162,19 @@
                                          aria-labelledby="edit-priority-label-@item.Id">
                                         <label class="prio-option prio--low">
                                             <input type="radio" name="editPriority" value="Low"
+                                                   id="edit-priority-low-@item.Id"
                                                    checked="@(Model.EditPriority == Priority.Low)" />
                                             <span>Low</span>
                                         </label>
                                         <label class="prio-option prio--medium">
                                             <input type="radio" name="editPriority" value="Medium"
+                                                   id="edit-priority-medium-@item.Id"
                                                    checked="@(Model.EditPriority == Priority.Medium)" />
                                             <span>Medium</span>
                                         </label>
                                         <label class="prio-option prio--high">
                                             <input type="radio" name="editPriority" value="High"
+                                                   id="edit-priority-high-@item.Id"
                                                    checked="@(Model.EditPriority == Priority.High)" />
                                             <span>High</span>
                                         </label>

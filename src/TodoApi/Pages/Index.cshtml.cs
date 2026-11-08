@@ -112,6 +112,23 @@ public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<Ind
 
     public IActionResult OnPostUpdate(int id, string? editTitle, string? editDescription, Priority? editPriority)
     {
+        if (!ModelState.IsValid)
+        {
+            EditId = id;
+            EditTitle = editTitle ?? string.Empty;
+            EditDescription = editDescription ?? string.Empty;
+            EditPriority = editPriority ?? TodoDraft.DefaultPriority;
+            EditError = ModelState.TryGetValue(nameof(editPriority), out var priorityState) &&
+                        priorityState is { Errors.Count: > 0 }
+                ? "Choose a valid priority."
+                : ModelState.Values
+                    .SelectMany(entry => entry.Errors)
+                    .Select(error => error.ErrorMessage)
+                    .First(message => !string.IsNullOrWhiteSpace(message));
+            Load();
+            return Page();
+        }
+
         if (!TodoDraft.TryCreate(editTitle, editDescription, editPriority, out var draft, out var errors))
         {
             _mutations.UpdateRejected(id, errors.Count);

@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using TodoApi.Domain;
 using TodoApi.Storage;
@@ -19,7 +20,8 @@ public abstract class ApiTest : IDisposable
 
     protected ApiTest()
     {
-        Client = Factory.CreateClient();
+        Client = Factory.CreateClient(
+            new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         Store = Factory.Services.GetRequiredService<ITodoStore>();
     }
 
