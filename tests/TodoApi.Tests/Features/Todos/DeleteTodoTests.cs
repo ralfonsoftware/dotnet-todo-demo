@@ -42,8 +42,7 @@ public sealed class DeleteTodoTests : ApiTest
     [Fact]
     public async Task Delete_WhenItemIsCompleted_Returns204()
     {
-        var item = Seed();
-        Store.Complete(item.Id, Now)!.Done.ShouldBeTrue();
+        var item = SeedCompleted();
 
         using var response = await Client.DeleteAsync($"/todos/{item.Id}", TestContext.Current.CancellationToken);
 

@@ -52,18 +52,21 @@ public sealed class InMemoryTodoStore : ITodoStore
         }
     }
 
-    public TodoItem? Complete(int id, DateTimeOffset completedAt)
+    public CompletionResult Complete(int id, DateTimeOffset completedAt)
     {
         lock (_gate)
         {
             if (!_items.TryGetValue(id, out var existing))
             {
-                return null;
+                return new CompletionResult.NotFound();
             }
 
             var completed = existing.Complete(completedAt);
             _items[id] = completed;
-            return completed;
+
+            return existing.Done
+                ? new CompletionResult.AlreadyDone(completed)
+                : new CompletionResult.Completed(completed);
         }
     }
 

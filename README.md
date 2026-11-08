@@ -158,4 +158,5 @@ curl -X POST http://localhost:5266/todos/1/complete
 - [ADR-0001: vertical slice architecture](docs/adr/0001-vertical-slice-architecture.md)
 - [ADR-0002: in-memory store](docs/adr/0002-in-memory-store.md)
 - [ADR-0003: OpenTelemetry and the Aspire Dashboard](docs/adr/0003-opentelemetry-and-aspire-dashboard.md)
+- [ADR-0004: Completion is a reported transition](docs/adr/0004-completion-is-a-reported-transition.md)
 - Implementation tickets: [`.scratch/todo-api/issues/`](.scratch/todo-api/issues/)

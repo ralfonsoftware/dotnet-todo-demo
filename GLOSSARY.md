@@ -9,7 +9,7 @@ A unit of work tracked by the API, identified by a number and carrying a title, 
 _Avoid_: Task, to-do, ticket, entry
 
 **Completion**:
-The one-way transition of a Todo Item to done, stamped with the time it happened; a completed Todo Item never returns to open.
+The one-way transition of a Todo Item to Done, stamped with the time it happened. A Completion either applies the transition or finds the Todo Item already done, in which case the original timestamp is kept; a completed Todo Item never returns to open.
 _Avoid_: Close, finish, resolve, check off
 
 **Done**:

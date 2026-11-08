@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Contracts;
 using TodoApi.Logging;
@@ -19,15 +20,21 @@ internal static class CompleteTodo
         TimeProvider clock,
         ILogger<TodoLogCategory> logger)
     {
-        var item = store.Complete(id, clock.GetUtcNow());
+        var result = store.Complete(id, clock.GetUtcNow());
 
-        if (item is null)
+        switch (result)
         {
-            TodoLogs.NotFound(logger, id, TodoOperations.Complete);
-            return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
+            case CompletionResult.NotFound:
+                TodoLogs.NotFound(logger, id, TodoOperations.Complete);
+                return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
+            case CompletionResult.Completed completed:
+                TodoLogs.CompleteSucceeded(logger, TodoOperations.Complete, completed.Item.Id, completed.Item.Priority);
+                return TypedResults.Ok(TodoResponse.From(completed.Item));
+            case CompletionResult.AlreadyDone alreadyDone:
+                TodoLogs.CompleteAlreadyDone(logger, TodoOperations.Complete, alreadyDone.Item.Id);
+                return TypedResults.Ok(TodoResponse.From(alreadyDone.Item));
+            default:
+                throw new UnreachableException();
         }
-
-        TodoLogs.CompleteSucceeded(logger, TodoOperations.Complete, item.Id, item.Priority);
-        return TypedResults.Ok(TodoResponse.From(item));
     }
 }

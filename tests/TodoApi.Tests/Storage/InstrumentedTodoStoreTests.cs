@@ -117,10 +117,10 @@ public sealed class InstrumentedTodoStoreTests
         using var store = new InstrumentedTodoStore(inner);
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
-        var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
+        var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1))
+            .ShouldBeOfType<CompletionResult.Completed>();
 
-        completed.ShouldNotBeNull();
-        completed.Done.ShouldBeTrue();
+        completed.Item.Done.ShouldBeTrue();
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.complete");
         span.GetTagItem("todo.operation").ShouldBe("complete");
@@ -138,10 +138,10 @@ public sealed class InstrumentedTodoStoreTests
         using var store = new InstrumentedTodoStore(inner);
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
-        var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(2));
+        var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(2))
+            .ShouldBeOfType<CompletionResult.AlreadyDone>();
 
-        completed.ShouldNotBeNull();
-        completed.CompletedAt.ShouldBe(DateTimeOffset.UnixEpoch.AddHours(1));
+        completed.Item.CompletedAt.ShouldBe(DateTimeOffset.UnixEpoch.AddHours(1));
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.complete");
         span.GetTagItem("todo.operation").ShouldBe("complete");
@@ -156,7 +156,8 @@ public sealed class InstrumentedTodoStoreTests
         using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
-        store.Complete(42, DateTimeOffset.UnixEpoch).ShouldBeNull();
+        store.Complete(42, DateTimeOffset.UnixEpoch)
+            .ShouldBeOfType<CompletionResult.NotFound>();
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.complete");

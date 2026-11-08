@@ -72,6 +72,29 @@ public sealed class TodoLogsTests : IDisposable
     }
 
     [Fact]
+    public async Task Complete_WhenCalledAgain_LogsSucceededOnceAndAlreadyDoneOnce()
+    {
+        var item = Seed();
+
+        using var first = await _client.PostAsync(
+            $"/todos/{item.Id}/complete", content: null, TestContext.Current.CancellationToken);
+        first.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        using var second = await _client.PostAsync(
+            $"/todos/{item.Id}/complete", content: null, TestContext.Current.CancellationToken);
+        second.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        _factory.Logs.Records
+            .Count(record => record.EventId.Id == TodoEventIds.CompleteSucceeded)
+            .ShouldBe(1);
+
+        var log = SingleLog(TodoEventIds.CompleteAlreadyDone);
+        log.Level.ShouldBe(LogLevel.Information);
+        log.Properties["Operation"].ShouldBe("complete");
+        log.Properties["TodoId"].ShouldBe(item.Id);
+    }
+
+    [Fact]
     public async Task Delete_Succeeded_LogsTodoIdAndPriorityFromTheDeletedItemAtInformation()
     {
         var item = Seed(priority: Priority.Low);

@@ -4,7 +4,7 @@ namespace TodoApi.Logging;
 /// Stable identifiers for Todo Item log events. The numbers are grouped by
 /// outcome so a range is self-describing in the Aspire Dashboard:
 /// <list type="bullet">
-/// <item>1000–1099: successful mutations.</item>
+/// <item>1000–1099: successful writes, including no-op replays.</item>
 /// <item>1100–1199: not-found outcomes.</item>
 /// <item>1200–1299: validation rejections.</item>
 /// <item>1300–1399: successful reads.</item>
@@ -18,6 +18,7 @@ public static class TodoEventIds
     public const int UpdateSucceeded = 1002;
     public const int CompleteSucceeded = 1003;
     public const int DeleteSucceeded = 1004;
+    public const int CompleteAlreadyDone = 1005;
 
     public const int NotFound = 1101;
 

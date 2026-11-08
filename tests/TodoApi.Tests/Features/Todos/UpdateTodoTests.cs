@@ -104,15 +104,13 @@ public sealed class UpdateTodoTests : ApiTest
     [Fact]
     public async Task Update_WhenItemIsCompleted_KeepsCompletion()
     {
-        var item = Seed();
-        var completed = Store.Complete(item.Id, Now);
-        completed.ShouldNotBeNull().Done.ShouldBeTrue();
+        var completed = SeedCompleted();
 
         Factory.Clock.Advance(TimeSpan.FromHours(1));
 
         using var response = await SendJsonAsync(
             HttpMethod.Put,
-            $"/todos/{item.Id}",
+            $"/todos/{completed.Id}",
             """{"title":"Edited after completion"}""");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);

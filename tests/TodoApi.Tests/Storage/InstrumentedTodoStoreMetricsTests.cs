@@ -55,9 +55,12 @@ public sealed class InstrumentedTodoStoreMetricsTests
         using var store = new InstrumentedTodoStore(inner);
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
 
-        store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1)).ShouldNotBeNull();
-        store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(2)).ShouldNotBeNull();
-        store.Complete(42, DateTimeOffset.UnixEpoch.AddHours(3)).ShouldBeNull();
+        store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1))
+            .ShouldBeOfType<CompletionResult.Completed>();
+        store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(2))
+            .ShouldBeOfType<CompletionResult.AlreadyDone>();
+        store.Complete(42, DateTimeOffset.UnixEpoch.AddHours(3))
+            .ShouldBeOfType<CompletionResult.NotFound>();
 
         var completed = metrics.Single("todo.items.completed");
         completed.Value.ShouldBe(1L);
@@ -75,7 +78,8 @@ public sealed class InstrumentedTodoStoreMetricsTests
 
         store.Get(42).ShouldBeNull();
         store.Update(42, "New title", null, Priority.Low).ShouldBeNull();
-        store.Complete(42, DateTimeOffset.UnixEpoch).ShouldBeNull();
+        store.Complete(42, DateTimeOffset.UnixEpoch)
+            .ShouldBeOfType<CompletionResult.NotFound>();
         store.Delete(42).ShouldBeNull();
 
         // Successful reads and mutations must not be counted as failures.
@@ -145,8 +149,10 @@ public sealed class InstrumentedTodoStoreMetricsTests
                 item.Id, DateTimeOffset.UnixEpoch.AddHours(hour))))
             .ToArray();
 
-        await Task.WhenAll(completions);
+        var results = await Task.WhenAll(completions);
 
+        results.Count(result => result is CompletionResult.Completed).ShouldBe(1);
+        results.Count(result => result is CompletionResult.AlreadyDone).ShouldBe(31);
         metrics.Single("todo.items.completed").Value.ShouldBe(1L);
     }
 

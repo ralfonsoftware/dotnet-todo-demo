@@ -38,6 +38,13 @@ internal static partial class TodoLogs
         ILogger logger, string operation, int todoId, Priority priority);
 
     [LoggerMessage(
+        EventId = TodoEventIds.CompleteAlreadyDone,
+        Level = LogLevel.Information,
+        Message = "{Operation} found Todo Item {TodoId} already done.")]
+    public static partial void CompleteAlreadyDone(
+        ILogger logger, string operation, int todoId);
+
+    [LoggerMessage(
         EventId = TodoEventIds.DeleteSucceeded,
         Level = LogLevel.Information,
         Message = "{Operation} succeeded for Todo Item {TodoId} with {Priority} priority.")]

@@ -31,6 +31,20 @@ public abstract class ApiTest : IDisposable
         Priority priority = Priority.Medium) =>
         Store.Create(title, description, priority, Now);
 
+    protected TodoItem SeedCompleted(
+        string title = "Seeded todo",
+        string? description = null,
+        Priority priority = Priority.Medium)
+    {
+        var item = Seed(title, description, priority);
+
+        return Store.Complete(item.Id, Now) switch
+        {
+            CompletionResult.Completed completed => completed.Item,
+            _ => throw new InvalidOperationException("Seeded Todo Item did not complete.")
+        };
+    }
+
     protected Task<HttpResponseMessage> SendJsonAsync(HttpMethod method, string url, string json) =>
         Client.SendAsync(
             new HttpRequestMessage(method, url)

@@ -48,8 +48,7 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
 
     private static readonly ActivitySource Source = new(ActivitySourceName);
 
-    private readonly InMemoryTodoStore inner;
-    private readonly object completionGate = new();
+    private readonly ITodoStore inner;
     private readonly Meter meter;
     private readonly Counter<long> createdItems;
     private readonly Counter<long> completedItems;
@@ -57,7 +56,7 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
     private readonly Counter<long> failedOperations;
     private readonly Histogram<double> operationDuration;
 
-    public InstrumentedTodoStore(InMemoryTodoStore inner)
+    public InstrumentedTodoStore(ITodoStore inner)
     {
         this.inner = inner;
         meter = new Meter(MeterName);
@@ -161,40 +160,33 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
         return item;
     }
 
-    public TodoItem? Complete(int id, DateTimeOffset completedAt)
+    public CompletionResult Complete(int id, DateTimeOffset completedAt)
     {
         using var timing = new OperationTiming(operationDuration, "complete");
         using var activity = Source.StartActivity("todos.complete", ActivityKind.Internal);
         activity?.SetTag(OperationTag, "complete");
         activity?.SetTag(IdTag, id);
 
-        TodoItem? existing;
-        TodoItem? item;
-        lock (completionGate)
+        CompletionResult result = inner.Complete(id, completedAt);
+
+        switch (result)
         {
-            existing = LookUpWithPriority(activity, id);
-            item = inner.Complete(id, completedAt);
+            case CompletionResult.NotFound:
+                activity?.SetTag(OutcomeTag, "not found");
+                RecordFailure("complete", "not found");
+                break;
+            case CompletionResult.Completed completed:
+                activity?.SetTag(OutcomeTag, "completed");
+                activity?.SetTag(PriorityTag, FormatPriority(completed.Item.Priority));
+                completedItems.Add(1);
+                break;
+            case CompletionResult.AlreadyDone alreadyDone:
+                activity?.SetTag(OutcomeTag, "already done");
+                activity?.SetTag(PriorityTag, FormatPriority(alreadyDone.Item.Priority));
+                break;
         }
 
-        var outcome = existing switch
-        {
-            null => "not found",
-            { Done: true } => "already done",
-            _ => "completed"
-        };
-        activity?.SetTag(OutcomeTag, outcome);
-
-        if (existing is { Done: false } && item is { Done: true })
-        {
-            completedItems.Add(1);
-        }
-
-        if (outcome == "not found")
-        {
-            RecordFailure("complete", outcome);
-        }
-
-        return item;
+        return result;
     }
 
     public TodoItem? Delete(int id)
