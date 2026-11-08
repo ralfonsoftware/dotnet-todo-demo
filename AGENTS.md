@@ -14,7 +14,7 @@ Requires the .NET 10 SDK. From the repo root:
 - Store: `src/TodoApi/Storage/` (`ITodoStore`, in-memory only; ADR-0002).
 - Telemetry: `src/TodoApi/Telemetry/` and `src/TodoApi/Logging/`.
 - Board: `src/TodoApi/Pages/`, Razor Pages reading `ITodoStore` in-process (ADR-0005).
-- Tests mirror `src/` under `tests/TodoApi.Tests/`.
+- Tests mirror `src/` under `tests/TodoApi.Tests/`. Shared test infrastructure (`ApiTest`, `TodoApiFactory`, `TelemetryEnabledFactory`, `MetricsCapture`, `Tracing`, `ApiJson`, `Drafts`, `TestMeters`) stays at the root of `tests/TodoApi.Tests/` because it serves every area.
 
 ## Commits
 
