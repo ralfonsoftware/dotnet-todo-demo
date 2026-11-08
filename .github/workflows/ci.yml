@@ -46,8 +46,12 @@ jobs:
       - name: Check formatting
         run: dotnet format TodoApi.slnx --no-restore --verify-no-changes
 
+      # Fork and Dependabot PRs get a read-only token, so the check run cannot be created.
       - name: Publish test results
-        if: ${{ !cancelled() }}
+        if: >-
+          ${{ !cancelled() && (github.event_name != 'pull_request'
+          || (github.event.pull_request.head.repo.full_name == github.repository
+          && github.actor != 'dependabot[bot]')) }}
         uses: dorny/test-reporter@d1b5dff021aa968b288b02285a8bf47471c5928a # v3.2.0
         with:
           name: Test results
