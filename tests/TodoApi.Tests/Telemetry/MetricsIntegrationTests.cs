@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using Shouldly;
 using TodoApi.Contracts;
-using TodoApi.Storage;
 using TodoApi.Telemetry;
 
 namespace TodoApi.Tests.Telemetry;
@@ -13,7 +12,7 @@ public sealed class MetricsIntegrationTests
     [Fact]
     public async Task CreateCompleteDelete_PublishLifecycleMetricsThroughRealRequests()
     {
-        using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
+        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
         using var factory = new TelemetryEnabledFactory();
         using var client = factory.CreateClient();
         var cancellationToken = TestContext.Current.CancellationToken;

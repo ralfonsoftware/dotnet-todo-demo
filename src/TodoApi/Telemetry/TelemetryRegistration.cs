@@ -3,7 +3,6 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using TodoApi.Storage;
 
 namespace TodoApi.Telemetry;
 
@@ -36,12 +35,12 @@ public static class TelemetryRegistration
                 .AddService(options.ServiceName, serviceVersion: options.ServiceVersion));
 
         openTelemetry.WithTracing(tracing => tracing
-            .AddSource(InstrumentedTodoStore.ActivitySourceName)
+            .AddSource(TodoTelemetry.ActivitySourceName)
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation());
 
         openTelemetry.WithMetrics(metrics => metrics
-            .AddMeter(InstrumentedTodoStore.MeterName)
+            .AddMeter(TodoTelemetry.MeterName)
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
             .AddRuntimeInstrumentation());

@@ -24,12 +24,18 @@ public sealed record TodoOperation
 }
 
 /// <summary>
-/// The Todo observability schema: the tag keys, instrument names, units, and
+/// The Todo observability schema: the activity source and meter names, the tag keys, instrument names, units, and
 /// outcome values shared by spans, metrics, and logs. Only the contract test
 /// pins the literal strings; everything else references these constants.
 /// </summary>
 public static class TodoTelemetry
 {
+    /// <summary>The name of the activity source that emits Todos Store spans.</summary>
+    public const string ActivitySourceName = "TodoApi.TodosStore";
+
+    /// <summary>The name of the meter that emits Todo Item lifecycle metrics.</summary>
+    public const string MeterName = "TodoApi.Todos";
+
     public static class Tags
     {
         public const string Operation = "todo.operation";

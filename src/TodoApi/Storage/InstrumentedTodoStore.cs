@@ -30,7 +30,7 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
     /// <summary>The name of the _meter that emits Todo Item lifecycle metrics.</summary>
     public const string MeterName = "TodoApi.Todos";
 
-    private static readonly ActivitySource Source = new(ActivitySourceName);
+    private static readonly ActivitySource Source = new(TodoTelemetry.ActivitySourceName);
 
     private readonly ITodoStore _inner;
     private readonly Meter _meter;
@@ -43,7 +43,7 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
     public InstrumentedTodoStore(ITodoStore inner)
     {
         _inner = inner;
-        _meter = new Meter(MeterName);
+        _meter = new Meter(TodoTelemetry.MeterName);
         _createdItems = _meter.CreateCounter<long>(
             TodoTelemetry.Instruments.ItemsCreated,
             unit: TodoTelemetry.Units.Items,

@@ -11,7 +11,7 @@ namespace TodoApi.Tests.Telemetry;
 public sealed class TodoVocabularyTests
 {
     [Fact]
-    public void Vocabulary_PinsEveryOperationTagInstrumentUnitAndOutcome()
+    public void Vocabulary_PinsEverySourceMeterOperationTagInstrumentUnitAndOutcome()
     {
         TodoOperation.List.Name.ShouldBe("list");
         TodoOperation.Get.Name.ShouldBe("get");
@@ -33,6 +33,9 @@ public sealed class TodoVocabularyTests
         TodoOperation.Update.ToString().ShouldBe("update");
         TodoOperation.Complete.ToString().ShouldBe("complete");
         TodoOperation.Delete.ToString().ShouldBe("delete");
+
+        TodoTelemetry.ActivitySourceName.ShouldBe("TodoApi.TodosStore");
+        TodoTelemetry.MeterName.ShouldBe("TodoApi.Todos");
 
         TodoTelemetry.Tags.Operation.ShouldBe("todo.operation");
         TodoTelemetry.Tags.Id.ShouldBe("todo.id");

@@ -19,8 +19,8 @@ public sealed class InstrumentedTodoStoreAdapterTests
     {
         var adapter = new RecordingTodoStore();
         using var store = new InstrumentedTodoStore(adapter);
-        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
-        using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
+        using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
+        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
 
         var item = store.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         store.GetAll();
@@ -39,7 +39,7 @@ public sealed class InstrumentedTodoStoreAdapterTests
             TodoOperation.Delete.Name
         ]);
 
-        var spans = capture.From(InstrumentedTodoStore.ActivitySourceName);
+        var spans = capture.From(TodoTelemetry.ActivitySourceName);
         spans.Count.ShouldBe(6);
 
         foreach (var operation in new[]
@@ -67,7 +67,7 @@ public sealed class InstrumentedTodoStoreAdapterTests
         var done = adapter.Create(Drafts.Of("Ship the demo", null, Priority.High), DateTimeOffset.UnixEpoch);
         adapter.Complete(done.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         using var store = new InstrumentedTodoStore(adapter);
-        using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
+        using var metrics = new MetricsCapture(TodoTelemetry.MeterName);
 
         metrics.ObserveGauges();
 
