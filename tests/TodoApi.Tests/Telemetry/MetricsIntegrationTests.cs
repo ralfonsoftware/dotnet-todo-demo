@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Shouldly;
 using TodoApi.Contracts;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Tests.Telemetry;
 
@@ -39,25 +40,32 @@ public sealed class MetricsIntegrationTests
 
         metrics.ObserveGauges();
 
-        var created = metrics.Single("todo.items.created");
+        var created = metrics.Single(TodoTelemetry.Instruments.ItemsCreated);
         created.Value.ShouldBe(1L);
-        created.Unit.ShouldBe("{item}");
-        created.Tag("todo.priority").ShouldBe("high");
+        created.Unit.ShouldBe(TodoTelemetry.Units.Items);
+        created.Tag(TodoTelemetry.Tags.Priority).ShouldBe("high");
 
-        metrics.Single("todo.items.completed").Value.ShouldBe(1L);
-        metrics.Single("todo.items.deleted").Value.ShouldBe(1L);
+        metrics.Single(TodoTelemetry.Instruments.ItemsCompleted).Value.ShouldBe(1L);
+        metrics.Single(TodoTelemetry.Instruments.ItemsDeleted).Value.ShouldBe(1L);
 
-        var failure = metrics.Single("todo.store.failures");
+        var failure = metrics.Single(TodoTelemetry.Instruments.StoreFailures);
         failure.Value.ShouldBe(1L);
-        failure.Tag("todo.operation").ShouldBe("get");
-        failure.Tag("todo.outcome").ShouldBe("not found");
+        failure.Tag(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Get.Name);
+        failure.Tag(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.NotFound);
 
-        var durations = metrics.All("todo.store.operation.duration");
-        durations.Select(duration => duration.Tag("todo.operation"))
-            .ShouldBe(["create", "complete", "get", "delete"], ignoreOrder: true);
-        durations.ShouldAllBe(duration => duration.Unit == "s");
+        var durations = metrics.All(TodoTelemetry.Instruments.OperationDuration);
+        durations.Select(duration => duration.Tag(TodoTelemetry.Tags.Operation))
+            .ShouldBe(
+                [
+                    TodoOperation.Create.Name,
+                    TodoOperation.Complete.Name,
+                    TodoOperation.Get.Name,
+                    TodoOperation.Delete.Name
+                ],
+                ignoreOrder: true);
+        durations.ShouldAllBe(duration => duration.Unit == TodoTelemetry.Units.Seconds);
 
-        metrics.Single("todo.items.total").Value.ShouldBe(0L);
-        metrics.Single("todo.items.done").Value.ShouldBe(0L);
+        metrics.Single(TodoTelemetry.Instruments.ItemsTotal).Value.ShouldBe(0L);
+        metrics.Single(TodoTelemetry.Instruments.ItemsDone).Value.ShouldBe(0L);
     }
 }

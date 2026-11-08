@@ -28,16 +28,3 @@ public static class TodoEventIds
     public const int GetSucceeded = 1301;
     public const int ListSucceeded = 1302;
 }
-
-/// <summary>
-/// Lowercase operation names carried in the <c>Operation</c> log property.
-/// </summary>
-public static class TodoOperations
-{
-    public const string Create = "create";
-    public const string Update = "update";
-    public const string Complete = "complete";
-    public const string Delete = "delete";
-    public const string Get = "get";
-    public const string List = "list";
-}

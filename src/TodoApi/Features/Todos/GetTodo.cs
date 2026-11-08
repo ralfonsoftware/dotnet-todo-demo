@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Contracts;
 using TodoApi.Logging;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Features.Todos;
 
@@ -22,11 +23,11 @@ internal static class GetTodo
 
         if (item is null)
         {
-            TodoLogs.NotFound(logger, id, TodoOperations.Get);
+            TodoLogs.NotFound(logger, id, TodoOperation.Get.Name);
             return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
         }
 
-        TodoLogs.GetSucceeded(logger, TodoOperations.Get, item.Id);
+        TodoLogs.GetSucceeded(logger, TodoOperation.Get.Name, item.Id);
         return TypedResults.Ok(TodoResponse.From(item));
     }
 }

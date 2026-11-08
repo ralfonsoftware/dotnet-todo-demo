@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using TodoApi.Domain;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Storage;
 
@@ -11,22 +12,10 @@ namespace TodoApi.Storage;
 /// lifecycle activity without recording Todo Item title or description.
 /// </summary>
 /// <remarks>
-/// Span names: <c>todos.list</c>, <c>todos.get</c>, <c>todos.create</c>,
-/// <c>todos.update</c>, <c>todos.complete</c>, <c>todos.delete</c>.
-/// Tags: <c>todo.operation</c> (list/get/create/update/complete/delete),
-/// <c>todo.id</c> (when an id is involved), <c>todo.priority</c> (lowercase
-/// low/medium/high, when an item or priority is involved), and
-/// <c>todo.outcome</c> (found/not found/created/updated/completed/already
-/// done/deleted).
-/// <para>
-/// Meter <c>TodoApi.Todos</c>: <c>todo.items.created</c> (Counter, item,
-/// <c>todo.priority</c>), <c>todo.items.completed</c> (Counter, item),
-/// <c>todo.items.deleted</c> (Counter, item), <c>todo.store.failures</c>
-/// (Counter, failure, <c>todo.operation</c> + <c>todo.outcome</c>),
-/// <c>todo.items.total</c> and <c>todo.items.done</c> (ObservableGauge, item,
-/// read from the raw store), and <c>todo.store.operation.duration</c>
-/// (Histogram, seconds, <c>todo.operation</c>).
-/// </para>
+/// The operation names, tag keys, instrument names, units, and outcome values
+/// come from <see cref="TodoOperation"/> and <see cref="TodoTelemetry"/>.
+/// Every operation emits exactly one span and one duration measurement, and no
+/// span ever tags a Todo Item title or description.
 /// <para>
 /// <c>todo.items.completed</c> advances only for a real not-Done to Done
 /// transition; replaying a Completion is reported as <c>already done</c> and
@@ -40,11 +29,6 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
 
     /// <summary>The name of the meter that emits Todo Item lifecycle metrics.</summary>
     public const string MeterName = "TodoApi.Todos";
-
-    private const string OperationTag = "todo.operation";
-    private const string IdTag = "todo.id";
-    private const string PriorityTag = "todo.priority";
-    private const string OutcomeTag = "todo.outcome";
 
     private static readonly ActivitySource Source = new(ActivitySourceName);
 
@@ -61,34 +45,34 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
         this.inner = inner;
         meter = new Meter(MeterName);
         createdItems = meter.CreateCounter<long>(
-            "todo.items.created",
-            unit: "{item}",
+            TodoTelemetry.Instruments.ItemsCreated,
+            unit: TodoTelemetry.Units.Items,
             description: "Todo Items created, tagged by Priority.");
         deletedItems = meter.CreateCounter<long>(
-            "todo.items.deleted",
-            unit: "{item}",
+            TodoTelemetry.Instruments.ItemsDeleted,
+            unit: TodoTelemetry.Units.Items,
             description: "Todo Items deleted from the Todos Store.");
         completedItems = meter.CreateCounter<long>(
-            "todo.items.completed",
-            unit: "{item}",
+            TodoTelemetry.Instruments.ItemsCompleted,
+            unit: TodoTelemetry.Units.Items,
             description: "Todo Items that transitioned from not Done to Done.");
         failedOperations = meter.CreateCounter<long>(
-            "todo.store.failures",
-            unit: "{failure}",
+            TodoTelemetry.Instruments.StoreFailures,
+            unit: TodoTelemetry.Units.Failures,
             description: "Todos Store operations that ended without applying their change.");
         operationDuration = meter.CreateHistogram<double>(
-            "todo.store.operation.duration",
-            unit: "s",
+            TodoTelemetry.Instruments.OperationDuration,
+            unit: TodoTelemetry.Units.Seconds,
             description: "Duration of every Todos Store operation.");
         meter.CreateObservableGauge(
-            "todo.items.total",
+            TodoTelemetry.Instruments.ItemsTotal,
             ObserveTotalItems,
-            unit: "{item}",
+            unit: TodoTelemetry.Units.Items,
             description: "Current number of Todo Items in the Todos Store.");
         meter.CreateObservableGauge(
-            "todo.items.done",
+            TodoTelemetry.Instruments.ItemsDone,
             ObserveDoneItems,
-            unit: "{item}",
+            unit: TodoTelemetry.Units.Items,
             description: "Current number of Done Todo Items in the Todos Store.");
     }
 
@@ -96,30 +80,30 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
 
     public IReadOnlyList<TodoItem> GetAll()
     {
-        using var timing = new OperationTiming(operationDuration, "list");
-        using var activity = Source.StartActivity("todos.list", ActivityKind.Internal);
-        activity?.SetTag(OperationTag, "list");
+        using var timing = new OperationTiming(operationDuration, TodoOperation.List);
+        using var activity = Source.StartActivity(TodoOperation.List.SpanName, ActivityKind.Internal);
+        activity?.SetTag(TodoTelemetry.Tags.Operation, TodoOperation.List.Name);
 
         var items = inner.GetAll();
-        activity?.SetTag(OutcomeTag, "found");
+        activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.Found);
 
         return items;
     }
 
     public TodoItem? Get(int id)
     {
-        using var timing = new OperationTiming(operationDuration, "get");
-        using var activity = Source.StartActivity("todos.get", ActivityKind.Internal);
-        activity?.SetTag(OperationTag, "get");
-        activity?.SetTag(IdTag, id);
+        using var timing = new OperationTiming(operationDuration, TodoOperation.Get);
+        using var activity = Source.StartActivity(TodoOperation.Get.SpanName, ActivityKind.Internal);
+        activity?.SetTag(TodoTelemetry.Tags.Operation, TodoOperation.Get.Name);
+        activity?.SetTag(TodoTelemetry.Tags.Id, id);
 
         var item = LookUpWithPriority(activity, id);
-        var outcome = item is null ? "not found" : "found";
-        activity?.SetTag(OutcomeTag, outcome);
+        var outcome = item is null ? TodoTelemetry.Outcomes.NotFound : TodoTelemetry.Outcomes.Found;
+        activity?.SetTag(TodoTelemetry.Tags.Outcome, outcome);
 
         if (item is null)
         {
-            RecordFailure("get", outcome);
+            RecordFailure(TodoOperation.Get, outcome);
         }
 
         return item;
@@ -127,34 +111,35 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
 
     public TodoItem Create(string title, string? description, Priority priority, DateTimeOffset createdAt)
     {
-        using var timing = new OperationTiming(operationDuration, "create");
-        using var activity = Source.StartActivity("todos.create", ActivityKind.Internal);
-        activity?.SetTag(OperationTag, "create");
-        activity?.SetTag(PriorityTag, FormatPriority(priority));
+        using var timing = new OperationTiming(operationDuration, TodoOperation.Create);
+        using var activity = Source.StartActivity(TodoOperation.Create.SpanName, ActivityKind.Internal);
+        activity?.SetTag(TodoTelemetry.Tags.Operation, TodoOperation.Create.Name);
+        activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(priority));
 
         var item = inner.Create(title, description, priority, createdAt);
-        createdItems.Add(1, new KeyValuePair<string, object?>(PriorityTag, FormatPriority(item.Priority)));
-        activity?.SetTag(IdTag, item.Id);
-        activity?.SetTag(OutcomeTag, "created");
+        createdItems.Add(1, new KeyValuePair<string, object?>(
+            TodoTelemetry.Tags.Priority, FormatPriority(item.Priority)));
+        activity?.SetTag(TodoTelemetry.Tags.Id, item.Id);
+        activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.Created);
 
         return item;
     }
 
     public TodoItem? Update(int id, string title, string? description, Priority priority)
     {
-        using var timing = new OperationTiming(operationDuration, "update");
-        using var activity = Source.StartActivity("todos.update", ActivityKind.Internal);
-        activity?.SetTag(OperationTag, "update");
-        activity?.SetTag(IdTag, id);
-        activity?.SetTag(PriorityTag, FormatPriority(priority));
+        using var timing = new OperationTiming(operationDuration, TodoOperation.Update);
+        using var activity = Source.StartActivity(TodoOperation.Update.SpanName, ActivityKind.Internal);
+        activity?.SetTag(TodoTelemetry.Tags.Operation, TodoOperation.Update.Name);
+        activity?.SetTag(TodoTelemetry.Tags.Id, id);
+        activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(priority));
 
         var item = inner.Update(id, title, description, priority);
-        var outcome = item is null ? "not found" : "updated";
-        activity?.SetTag(OutcomeTag, outcome);
+        var outcome = item is null ? TodoTelemetry.Outcomes.NotFound : TodoTelemetry.Outcomes.Updated;
+        activity?.SetTag(TodoTelemetry.Tags.Outcome, outcome);
 
         if (item is null)
         {
-            RecordFailure("update", outcome);
+            RecordFailure(TodoOperation.Update, outcome);
         }
 
         return item;
@@ -162,27 +147,27 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
 
     public CompletionResult Complete(int id, DateTimeOffset completedAt)
     {
-        using var timing = new OperationTiming(operationDuration, "complete");
-        using var activity = Source.StartActivity("todos.complete", ActivityKind.Internal);
-        activity?.SetTag(OperationTag, "complete");
-        activity?.SetTag(IdTag, id);
+        using var timing = new OperationTiming(operationDuration, TodoOperation.Complete);
+        using var activity = Source.StartActivity(TodoOperation.Complete.SpanName, ActivityKind.Internal);
+        activity?.SetTag(TodoTelemetry.Tags.Operation, TodoOperation.Complete.Name);
+        activity?.SetTag(TodoTelemetry.Tags.Id, id);
 
         CompletionResult result = inner.Complete(id, completedAt);
 
         switch (result)
         {
             case CompletionResult.NotFound:
-                activity?.SetTag(OutcomeTag, "not found");
-                RecordFailure("complete", "not found");
+                activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.NotFound);
+                RecordFailure(TodoOperation.Complete, TodoTelemetry.Outcomes.NotFound);
                 break;
             case CompletionResult.Completed completed:
-                activity?.SetTag(OutcomeTag, "completed");
-                activity?.SetTag(PriorityTag, FormatPriority(completed.Item.Priority));
+                activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.Completed);
+                activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(completed.Item.Priority));
                 completedItems.Add(1);
                 break;
             case CompletionResult.AlreadyDone alreadyDone:
-                activity?.SetTag(OutcomeTag, "already done");
-                activity?.SetTag(PriorityTag, FormatPriority(alreadyDone.Item.Priority));
+                activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.AlreadyDone);
+                activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(alreadyDone.Item.Priority));
                 break;
         }
 
@@ -191,23 +176,25 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
 
     public TodoItem? Delete(int id)
     {
-        using var timing = new OperationTiming(operationDuration, "delete");
-        using var activity = Source.StartActivity("todos.delete", ActivityKind.Internal);
-        activity?.SetTag(OperationTag, "delete");
-        activity?.SetTag(IdTag, id);
+        using var timing = new OperationTiming(operationDuration, TodoOperation.Delete);
+        using var activity = Source.StartActivity(TodoOperation.Delete.SpanName, ActivityKind.Internal);
+        activity?.SetTag(TodoTelemetry.Tags.Operation, TodoOperation.Delete.Name);
+        activity?.SetTag(TodoTelemetry.Tags.Id, id);
 
         var deleted = inner.Delete(id);
         if (deleted is not null)
         {
             deletedItems.Add(1);
-            activity?.SetTag(PriorityTag, FormatPriority(deleted.Priority));
+            activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(deleted.Priority));
         }
         else
         {
-            RecordFailure("delete", "not found");
+            RecordFailure(TodoOperation.Delete, TodoTelemetry.Outcomes.NotFound);
         }
 
-        activity?.SetTag(OutcomeTag, deleted is not null ? "deleted" : "not found");
+        activity?.SetTag(
+            TodoTelemetry.Tags.Outcome,
+            deleted is not null ? TodoTelemetry.Outcomes.Deleted : TodoTelemetry.Outcomes.NotFound);
 
         return deleted;
     }
@@ -217,7 +204,7 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
         var item = inner.Get(id);
         if (item is not null)
         {
-            activity?.SetTag(PriorityTag, FormatPriority(item.Priority));
+            activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(item.Priority));
         }
 
         return item;
@@ -227,11 +214,11 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
 
     private long ObserveDoneItems() => inner.GetAll().Count(item => item.Done);
 
-    private void RecordFailure(string operation, string outcome) =>
+    private void RecordFailure(TodoOperation operation, string outcome) =>
         failedOperations.Add(
             1,
-            new KeyValuePair<string, object?>(OperationTag, operation),
-            new KeyValuePair<string, object?>(OutcomeTag, outcome));
+            new KeyValuePair<string, object?>(TodoTelemetry.Tags.Operation, operation.Name),
+            new KeyValuePair<string, object?>(TodoTelemetry.Tags.Outcome, outcome));
 
     private static string FormatPriority(Priority priority) => priority.ToString().ToLowerInvariant();
 
@@ -239,10 +226,10 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
     private readonly struct OperationTiming : IDisposable
     {
         private readonly Histogram<double> histogram;
-        private readonly string operation;
+        private readonly TodoOperation operation;
         private readonly long startedAt;
 
-        public OperationTiming(Histogram<double> histogram, string operation)
+        public OperationTiming(Histogram<double> histogram, TodoOperation operation)
         {
             this.histogram = histogram;
             this.operation = operation;
@@ -252,6 +239,6 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
         public void Dispose() =>
             histogram.Record(
                 Stopwatch.GetElapsedTime(startedAt).TotalSeconds,
-                new KeyValuePair<string, object?>(OperationTag, operation));
+                new KeyValuePair<string, object?>(TodoTelemetry.Tags.Operation, operation.Name));
     }
 }

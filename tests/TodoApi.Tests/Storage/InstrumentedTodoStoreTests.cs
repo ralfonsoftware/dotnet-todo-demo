@@ -1,6 +1,7 @@
 using Shouldly;
 using TodoApi.Domain;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Tests.Storage;
 
@@ -16,11 +17,11 @@ public sealed class InstrumentedTodoStoreTests
         store.GetAll();
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.list");
-        span.GetTagItem("todo.operation").ShouldBe("list");
-        span.GetTagItem("todo.outcome").ShouldBe("found");
-        span.GetTagItem("todo.id").ShouldBeNull();
-        span.GetTagItem("todo.priority").ShouldBeNull();
+        span.DisplayName.ShouldBe(TodoOperation.List.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.List.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.Found);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBeNull();
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBeNull();
     }
 
     [Fact]
@@ -35,11 +36,11 @@ public sealed class InstrumentedTodoStoreTests
 
         found.ShouldBe(item);
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.get");
-        span.GetTagItem("todo.operation").ShouldBe("get");
-        span.GetTagItem("todo.id").ShouldBe(item.Id);
-        span.GetTagItem("todo.priority").ShouldBe("high");
-        span.GetTagItem("todo.outcome").ShouldBe("found");
+        span.DisplayName.ShouldBe(TodoOperation.Get.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Get.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(item.Id);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBe("high");
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.Found);
     }
 
     [Fact]
@@ -51,11 +52,11 @@ public sealed class InstrumentedTodoStoreTests
         store.Get(42).ShouldBeNull();
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.get");
-        span.GetTagItem("todo.operation").ShouldBe("get");
-        span.GetTagItem("todo.id").ShouldBe(42);
-        span.GetTagItem("todo.priority").ShouldBeNull();
-        span.GetTagItem("todo.outcome").ShouldBe("not found");
+        span.DisplayName.ShouldBe(TodoOperation.Get.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Get.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(42);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBeNull();
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.NotFound);
     }
 
     [Fact]
@@ -67,11 +68,11 @@ public sealed class InstrumentedTodoStoreTests
         var created = store.Create("Buy milk", "Semi-skimmed", Priority.Low, DateTimeOffset.UnixEpoch);
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.create");
-        span.GetTagItem("todo.operation").ShouldBe("create");
-        span.GetTagItem("todo.id").ShouldBe(created.Id);
-        span.GetTagItem("todo.priority").ShouldBe("low");
-        span.GetTagItem("todo.outcome").ShouldBe("created");
+        span.DisplayName.ShouldBe(TodoOperation.Create.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Create.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(created.Id);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBe("low");
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.Created);
     }
 
     [Fact]
@@ -86,11 +87,11 @@ public sealed class InstrumentedTodoStoreTests
 
         updated.ShouldNotBeNull();
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.update");
-        span.GetTagItem("todo.operation").ShouldBe("update");
-        span.GetTagItem("todo.id").ShouldBe(item.Id);
-        span.GetTagItem("todo.priority").ShouldBe("high");
-        span.GetTagItem("todo.outcome").ShouldBe("updated");
+        span.DisplayName.ShouldBe(TodoOperation.Update.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Update.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(item.Id);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBe("high");
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.Updated);
     }
 
     [Fact]
@@ -102,11 +103,11 @@ public sealed class InstrumentedTodoStoreTests
         store.Update(42, "New title", null, Priority.Medium).ShouldBeNull();
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.update");
-        span.GetTagItem("todo.operation").ShouldBe("update");
-        span.GetTagItem("todo.id").ShouldBe(42);
-        span.GetTagItem("todo.priority").ShouldBe("medium");
-        span.GetTagItem("todo.outcome").ShouldBe("not found");
+        span.DisplayName.ShouldBe(TodoOperation.Update.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Update.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(42);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBe("medium");
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.NotFound);
     }
 
     [Fact]
@@ -122,11 +123,11 @@ public sealed class InstrumentedTodoStoreTests
 
         completed.Item.Done.ShouldBeTrue();
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.complete");
-        span.GetTagItem("todo.operation").ShouldBe("complete");
-        span.GetTagItem("todo.id").ShouldBe(item.Id);
-        span.GetTagItem("todo.priority").ShouldBe("high");
-        span.GetTagItem("todo.outcome").ShouldBe("completed");
+        span.DisplayName.ShouldBe(TodoOperation.Complete.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Complete.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(item.Id);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBe("high");
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.Completed);
     }
 
     [Fact]
@@ -143,11 +144,11 @@ public sealed class InstrumentedTodoStoreTests
 
         completed.Item.CompletedAt.ShouldBe(DateTimeOffset.UnixEpoch.AddHours(1));
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.complete");
-        span.GetTagItem("todo.operation").ShouldBe("complete");
-        span.GetTagItem("todo.id").ShouldBe(item.Id);
-        span.GetTagItem("todo.priority").ShouldBe("medium");
-        span.GetTagItem("todo.outcome").ShouldBe("already done");
+        span.DisplayName.ShouldBe(TodoOperation.Complete.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Complete.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(item.Id);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBe("medium");
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.AlreadyDone);
     }
 
     [Fact]
@@ -160,11 +161,11 @@ public sealed class InstrumentedTodoStoreTests
             .ShouldBeOfType<CompletionResult.NotFound>();
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.complete");
-        span.GetTagItem("todo.operation").ShouldBe("complete");
-        span.GetTagItem("todo.id").ShouldBe(42);
-        span.GetTagItem("todo.priority").ShouldBeNull();
-        span.GetTagItem("todo.outcome").ShouldBe("not found");
+        span.DisplayName.ShouldBe(TodoOperation.Complete.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Complete.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(42);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBeNull();
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.NotFound);
     }
 
     [Fact]
@@ -178,11 +179,11 @@ public sealed class InstrumentedTodoStoreTests
         store.Delete(item.Id).ShouldNotBeNull();
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.delete");
-        span.GetTagItem("todo.operation").ShouldBe("delete");
-        span.GetTagItem("todo.id").ShouldBe(item.Id);
-        span.GetTagItem("todo.priority").ShouldBe("low");
-        span.GetTagItem("todo.outcome").ShouldBe("deleted");
+        span.DisplayName.ShouldBe(TodoOperation.Delete.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Delete.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(item.Id);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBe("low");
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.Deleted);
     }
 
     [Fact]
@@ -194,11 +195,11 @@ public sealed class InstrumentedTodoStoreTests
         store.Delete(42).ShouldBeNull();
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
-        span.DisplayName.ShouldBe("todos.delete");
-        span.GetTagItem("todo.operation").ShouldBe("delete");
-        span.GetTagItem("todo.id").ShouldBe(42);
-        span.GetTagItem("todo.priority").ShouldBeNull();
-        span.GetTagItem("todo.outcome").ShouldBe("not found");
+        span.DisplayName.ShouldBe(TodoOperation.Delete.SpanName);
+        span.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Delete.Name);
+        span.GetTagItem(TodoTelemetry.Tags.Id).ShouldBe(42);
+        span.GetTagItem(TodoTelemetry.Tags.Priority).ShouldBeNull();
+        span.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.NotFound);
     }
 
     [Fact]
@@ -218,9 +219,18 @@ public sealed class InstrumentedTodoStoreTests
         var spans = capture.From(InstrumentedTodoStore.ActivitySourceName);
         spans.Count.ShouldBe(6);
 
-        foreach (var operation in new[] { "list", "get", "create", "update", "complete", "delete" })
+        foreach (var operation in new[]
         {
-            spans.Count(span => Equals(span.GetTagItem("todo.operation"), operation)).ShouldBe(1);
+            TodoOperation.List,
+            TodoOperation.Get,
+            TodoOperation.Create,
+            TodoOperation.Update,
+            TodoOperation.Complete,
+            TodoOperation.Delete
+        })
+        {
+            spans.Count(span => Equals(
+                span.GetTagItem(TodoTelemetry.Tags.Operation), operation.Name)).ShouldBe(1);
         }
     }
 

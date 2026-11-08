@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using TodoApi.Domain;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Tests.Storage;
 
@@ -18,37 +19,37 @@ internal sealed class RecordingTodoStore : ITodoStore
 
     public IReadOnlyList<TodoItem> GetAll()
     {
-        calls.Enqueue("list");
+        calls.Enqueue(TodoOperation.List.Name);
         return inner.GetAll();
     }
 
     public TodoItem? Get(int id)
     {
-        calls.Enqueue("get");
+        calls.Enqueue(TodoOperation.Get.Name);
         return inner.Get(id);
     }
 
     public TodoItem Create(string title, string? description, Priority priority, DateTimeOffset createdAt)
     {
-        calls.Enqueue("create");
+        calls.Enqueue(TodoOperation.Create.Name);
         return inner.Create(title, description, priority, createdAt);
     }
 
     public TodoItem? Update(int id, string title, string? description, Priority priority)
     {
-        calls.Enqueue("update");
+        calls.Enqueue(TodoOperation.Update.Name);
         return inner.Update(id, title, description, priority);
     }
 
     public CompletionResult Complete(int id, DateTimeOffset completedAt)
     {
-        calls.Enqueue("complete");
+        calls.Enqueue(TodoOperation.Complete.Name);
         return inner.Complete(id, completedAt);
     }
 
     public TodoItem? Delete(int id)
     {
-        calls.Enqueue("delete");
+        calls.Enqueue(TodoOperation.Delete.Name);
         return inner.Delete(id);
     }
 }

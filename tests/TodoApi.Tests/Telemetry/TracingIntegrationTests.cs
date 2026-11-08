@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using TodoApi.Contracts;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Tests.Telemetry;
 
@@ -34,8 +35,8 @@ public sealed class TracingIntegrationTests
         storeSpan.Kind.ShouldBe(ActivityKind.Internal);
         storeSpan.TraceId.ShouldBe(serverSpan.TraceId);
         storeSpan.ParentSpanId.ShouldBe(serverSpan.SpanId);
-        storeSpan.GetTagItem("todo.operation").ShouldBe("create");
-        storeSpan.GetTagItem("todo.outcome").ShouldBe("created");
+        storeSpan.GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Create.Name);
+        storeSpan.GetTagItem(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.Created);
 
         storeSpan.Events.ShouldBeEmpty();
 
@@ -76,9 +77,9 @@ public sealed class TracingIntegrationTests
 
         var storeSpans = capture.From(InstrumentedTodoStore.ActivitySourceName);
         storeSpans.Count.ShouldBe(3);
-        storeSpans[0].GetTagItem("todo.operation").ShouldBe("create");
-        storeSpans[1].GetTagItem("todo.operation").ShouldBe("complete");
-        storeSpans[2].GetTagItem("todo.operation").ShouldBe("delete");
+        storeSpans[0].GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Create.Name);
+        storeSpans[1].GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Complete.Name);
+        storeSpans[2].GetTagItem(TodoTelemetry.Tags.Operation).ShouldBe(TodoOperation.Delete.Name);
 
         var serverSpans = capture.From("Microsoft.AspNetCore")
             .Where(activity => activity.Kind == ActivityKind.Server)

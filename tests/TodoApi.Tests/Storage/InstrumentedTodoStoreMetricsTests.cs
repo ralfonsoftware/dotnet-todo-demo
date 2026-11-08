@@ -1,6 +1,7 @@
 using Shouldly;
 using TodoApi.Domain;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Tests.Storage;
 
@@ -17,16 +18,16 @@ public sealed class InstrumentedTodoStoreMetricsTests
         store.Create("Medium item", null, Priority.Medium, DateTimeOffset.UnixEpoch);
         store.Create("High item", null, Priority.High, DateTimeOffset.UnixEpoch);
 
-        var created = metrics.All("todo.items.created");
+        var created = metrics.All(TodoTelemetry.Instruments.ItemsCreated);
         created.Count.ShouldBe(3);
-        created.Select(measurement => measurement.Tag("todo.priority"))
+        created.Select(measurement => measurement.Tag(TodoTelemetry.Tags.Priority))
             .ShouldBe(["low", "medium", "high"], ignoreOrder: true);
         created.ShouldAllBe(measurement => (long)measurement.Value == 1L);
-        created.ShouldAllBe(measurement => measurement.Unit == "{item}");
+        created.ShouldAllBe(measurement => measurement.Unit == TodoTelemetry.Units.Items);
 
         foreach (var measurement in created)
         {
-            measurement.Tags.Keys.ShouldBe(["todo.priority"]);
+            measurement.Tags.Keys.ShouldBe([TodoTelemetry.Tags.Priority]);
         }
     }
 
@@ -41,9 +42,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
         store.Delete(item.Id).ShouldNotBeNull();
         store.Delete(item.Id).ShouldBeNull();
 
-        var deleted = metrics.Single("todo.items.deleted");
+        var deleted = metrics.Single(TodoTelemetry.Instruments.ItemsDeleted);
         deleted.Value.ShouldBe(1L);
-        deleted.Unit.ShouldBe("{item}");
+        deleted.Unit.ShouldBe(TodoTelemetry.Units.Items);
         deleted.Tags.ShouldBeEmpty();
     }
 
@@ -62,9 +63,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
         store.Complete(42, DateTimeOffset.UnixEpoch.AddHours(3))
             .ShouldBeOfType<CompletionResult.NotFound>();
 
-        var completed = metrics.Single("todo.items.completed");
+        var completed = metrics.Single(TodoTelemetry.Instruments.ItemsCompleted);
         completed.Value.ShouldBe(1L);
-        completed.Unit.ShouldBe("{item}");
+        completed.Unit.ShouldBe(TodoTelemetry.Units.Items);
         completed.Tags.ShouldBeEmpty();
     }
 
@@ -90,16 +91,23 @@ public sealed class InstrumentedTodoStoreMetricsTests
         store.Create("Another item", null, Priority.High, DateTimeOffset.UnixEpoch);
         store.Delete(existing.Id);
 
-        var failures = metrics.All("todo.store.failures");
+        var failures = metrics.All(TodoTelemetry.Instruments.StoreFailures);
         failures.Count.ShouldBe(4);
-        failures.Select(failure => failure.Tag("todo.operation"))
-            .ShouldBe(["get", "update", "complete", "delete"], ignoreOrder: true);
+        failures.Select(failure => failure.Tag(TodoTelemetry.Tags.Operation))
+            .ShouldBe(
+                [
+                    TodoOperation.Get.Name,
+                    TodoOperation.Update.Name,
+                    TodoOperation.Complete.Name,
+                    TodoOperation.Delete.Name
+                ],
+                ignoreOrder: true);
 
         foreach (var failure in failures)
         {
             failure.Value.ShouldBe(1L);
-            failure.Unit.ShouldBe("{failure}");
-            failure.Tag("todo.outcome").ShouldBe("not found");
+            failure.Unit.ShouldBe(TodoTelemetry.Units.Failures);
+            failure.Tag(TodoTelemetry.Tags.Outcome).ShouldBe(TodoTelemetry.Outcomes.NotFound);
         }
     }
 
@@ -119,18 +127,27 @@ public sealed class InstrumentedTodoStoreMetricsTests
         store.Delete(created.Id);
         store.Get(42);
 
-        var durations = metrics.All("todo.store.operation.duration");
+        var durations = metrics.All(TodoTelemetry.Instruments.OperationDuration);
         durations.Count.ShouldBe(7);
-        durations.Count(duration => duration.Tag("todo.operation") is "get").ShouldBe(2);
+        durations.Count(duration => Equals(
+            duration.Tag(TodoTelemetry.Tags.Operation), TodoOperation.Get.Name)).ShouldBe(2);
 
-        foreach (var operation in new[] { "list", "create", "update", "complete", "delete" })
+        foreach (var operation in new[]
         {
-            durations.Count(duration => Equals(duration.Tag("todo.operation"), operation)).ShouldBe(1);
+            TodoOperation.List,
+            TodoOperation.Create,
+            TodoOperation.Update,
+            TodoOperation.Complete,
+            TodoOperation.Delete
+        })
+        {
+            durations.Count(duration => Equals(
+                duration.Tag(TodoTelemetry.Tags.Operation), operation.Name)).ShouldBe(1);
         }
 
         foreach (var duration in durations)
         {
-            duration.Unit.ShouldBe("s");
+            duration.Unit.ShouldBe(TodoTelemetry.Units.Seconds);
             var seconds = duration.Value.ShouldBeOfType<double>();
             seconds.ShouldBeGreaterThanOrEqualTo(0);
         }
@@ -153,7 +170,7 @@ public sealed class InstrumentedTodoStoreMetricsTests
 
         results.Count(result => result is CompletionResult.Completed).ShouldBe(1);
         results.Count(result => result is CompletionResult.AlreadyDone).ShouldBe(31);
-        metrics.Single("todo.items.completed").Value.ShouldBe(1L);
+        metrics.Single(TodoTelemetry.Instruments.ItemsCompleted).Value.ShouldBe(1L);
     }
 
     [Fact]
@@ -168,13 +185,13 @@ public sealed class InstrumentedTodoStoreMetricsTests
 
         metrics.ObserveGauges();
 
-        var total = metrics.Single("todo.items.total");
+        var total = metrics.Single(TodoTelemetry.Instruments.ItemsTotal);
         total.Value.ShouldBe(2L);
-        total.Unit.ShouldBe("{item}");
+        total.Unit.ShouldBe(TodoTelemetry.Units.Items);
 
-        var doneCount = metrics.Single("todo.items.done");
+        var doneCount = metrics.Single(TodoTelemetry.Instruments.ItemsDone);
         doneCount.Value.ShouldBe(1L);
-        doneCount.Unit.ShouldBe("{item}");
+        doneCount.Unit.ShouldBe(TodoTelemetry.Units.Items);
 
         store.Create("Buy oat milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
         store.Complete(open.Id, DateTimeOffset.UnixEpoch.AddHours(2));
@@ -182,7 +199,7 @@ public sealed class InstrumentedTodoStoreMetricsTests
 
         metrics.ObserveGauges();
 
-        metrics.All("todo.items.total").Last().Value.ShouldBe(2L);
-        metrics.All("todo.items.done").Last().Value.ShouldBe(1L);
+        metrics.All(TodoTelemetry.Instruments.ItemsTotal).Last().Value.ShouldBe(2L);
+        metrics.All(TodoTelemetry.Instruments.ItemsDone).Last().Value.ShouldBe(1L);
     }
 }

@@ -6,6 +6,7 @@ using Shouldly;
 using TodoApi.Domain;
 using TodoApi.Logging;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Tests.Logging;
 
@@ -30,7 +31,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.CreateSucceeded);
         log.Level.ShouldBe(LogLevel.Information);
-        log.Properties["Operation"].ShouldBe("create");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Create.Name);
         log.Properties["TodoId"].ShouldBe(1);
         log.Properties["Priority"].ShouldBe(Priority.High);
     }
@@ -49,7 +50,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.UpdateSucceeded);
         log.Level.ShouldBe(LogLevel.Information);
-        log.Properties["Operation"].ShouldBe("update");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Update.Name);
         log.Properties["TodoId"].ShouldBe(item.Id);
         log.Properties["Priority"].ShouldBe(Priority.High);
     }
@@ -66,7 +67,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.CompleteSucceeded);
         log.Level.ShouldBe(LogLevel.Information);
-        log.Properties["Operation"].ShouldBe("complete");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Complete.Name);
         log.Properties["TodoId"].ShouldBe(item.Id);
         log.Properties["Priority"].ShouldBe(Priority.High);
     }
@@ -90,7 +91,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.CompleteAlreadyDone);
         log.Level.ShouldBe(LogLevel.Information);
-        log.Properties["Operation"].ShouldBe("complete");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Complete.Name);
         log.Properties["TodoId"].ShouldBe(item.Id);
     }
 
@@ -106,7 +107,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.DeleteSucceeded);
         log.Level.ShouldBe(LogLevel.Information);
-        log.Properties["Operation"].ShouldBe("delete");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Delete.Name);
         log.Properties["TodoId"].ShouldBe(item.Id);
         log.Properties["Priority"].ShouldBe(Priority.Low);
     }
@@ -120,7 +121,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.NotFound);
         log.Level.ShouldBe(LogLevel.Warning);
-        log.Properties["Operation"].ShouldBe("get");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Get.Name);
         log.Properties["TodoId"].ShouldBe(9999);
     }
 
@@ -135,7 +136,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.GetSucceeded);
         log.Level.ShouldBe(LogLevel.Debug);
-        log.Properties["Operation"].ShouldBe("get");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Get.Name);
         log.Properties["TodoId"].ShouldBe(item.Id);
     }
 
@@ -152,7 +153,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.ListSucceeded);
         log.Level.ShouldBe(LogLevel.Debug);
-        log.Properties["Operation"].ShouldBe("list");
+        log.Properties["Operation"].ShouldBe(TodoOperation.List.Name);
         log.Properties["Count"].ShouldBe(3);
     }
 
@@ -166,7 +167,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.NotFound);
         log.Level.ShouldBe(LogLevel.Warning);
-        log.Properties["Operation"].ShouldBe("update");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Update.Name);
         log.Properties["TodoId"].ShouldBe(9999);
     }
 
@@ -180,7 +181,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.NotFound);
         log.Level.ShouldBe(LogLevel.Warning);
-        log.Properties["Operation"].ShouldBe("complete");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Complete.Name);
         log.Properties["TodoId"].ShouldBe(9999);
     }
 
@@ -193,7 +194,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.NotFound);
         log.Level.ShouldBe(LogLevel.Warning);
-        log.Properties["Operation"].ShouldBe("delete");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Delete.Name);
         log.Properties["TodoId"].ShouldBe(9999);
     }
 
@@ -209,7 +210,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.CreateValidationRejected);
         log.Level.ShouldBe(LogLevel.Warning);
-        log.Properties["Operation"].ShouldBe("create");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Create.Name);
         log.Properties["ErrorCount"].ShouldBe(2);
         _factory.Logs.Records.ShouldNotContain(
             record => record.EventId.Id == TodoEventIds.CreateSucceeded);
@@ -227,7 +228,7 @@ public sealed class TodoLogsTests : IDisposable
 
         var log = SingleLog(TodoEventIds.UpdateValidationRejected);
         log.Level.ShouldBe(LogLevel.Warning);
-        log.Properties["Operation"].ShouldBe("update");
+        log.Properties["Operation"].ShouldBe(TodoOperation.Update.Name);
         log.Properties["TodoId"].ShouldBe(item.Id);
         log.Properties["ErrorCount"].ShouldBe(1);
         _factory.Logs.Records.ShouldNotContain(

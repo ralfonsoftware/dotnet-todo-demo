@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Contracts;
 using TodoApi.Logging;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Features.Todos;
 
@@ -18,7 +19,7 @@ internal static class ListTodos
     {
         var items = store.GetAll();
 
-        TodoLogs.ListSucceeded(logger, TodoOperations.List, items.Count);
+        TodoLogs.ListSucceeded(logger, TodoOperation.List.Name, items.Count);
 
         return TypedResults.Ok(items.Select(TodoResponse.From).ToArray());
     }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Contracts;
 using TodoApi.Logging;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Features.Todos;
 
@@ -25,13 +26,13 @@ internal static class CompleteTodo
         switch (result)
         {
             case CompletionResult.NotFound:
-                TodoLogs.NotFound(logger, id, TodoOperations.Complete);
+                TodoLogs.NotFound(logger, id, TodoOperation.Complete.Name);
                 return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
             case CompletionResult.Completed completed:
-                TodoLogs.CompleteSucceeded(logger, TodoOperations.Complete, completed.Item.Id, completed.Item.Priority);
+                TodoLogs.CompleteSucceeded(logger, TodoOperation.Complete.Name, completed.Item.Id, completed.Item.Priority);
                 return TypedResults.Ok(TodoResponse.From(completed.Item));
             case CompletionResult.AlreadyDone alreadyDone:
-                TodoLogs.CompleteAlreadyDone(logger, TodoOperations.Complete, alreadyDone.Item.Id);
+                TodoLogs.CompleteAlreadyDone(logger, TodoOperation.Complete.Name, alreadyDone.Item.Id);
                 return TypedResults.Ok(TodoResponse.From(alreadyDone.Item));
             default:
                 throw new UnreachableException();

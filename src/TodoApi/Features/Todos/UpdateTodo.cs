@@ -4,6 +4,7 @@ using TodoApi.Contracts;
 using TodoApi.Domain;
 using TodoApi.Logging;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Features.Todos;
 
@@ -29,7 +30,7 @@ internal static class UpdateTodo
         var errors = TodoInput.Validate(request.Title, request.Description);
         if (errors.Count > 0)
         {
-            TodoLogs.UpdateValidationRejected(logger, TodoOperations.Update, id, errors.Count);
+            TodoLogs.UpdateValidationRejected(logger, TodoOperation.Update.Name, id, errors.Count);
             return TypedResults.ValidationProblem(errors);
         }
 
@@ -41,11 +42,11 @@ internal static class UpdateTodo
 
         if (item is null)
         {
-            TodoLogs.NotFound(logger, id, TodoOperations.Update);
+            TodoLogs.NotFound(logger, id, TodoOperation.Update.Name);
             return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
         }
 
-        TodoLogs.UpdateSucceeded(logger, TodoOperations.Update, item.Id, item.Priority);
+        TodoLogs.UpdateSucceeded(logger, TodoOperation.Update.Name, item.Id, item.Priority);
         return TypedResults.Ok(TodoResponse.From(item));
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Logging;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Features.Todos;
 
@@ -21,11 +22,11 @@ internal static class DeleteTodo
 
         if (deleted is null)
         {
-            TodoLogs.NotFound(logger, id, TodoOperations.Delete);
+            TodoLogs.NotFound(logger, id, TodoOperation.Delete.Name);
             return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
         }
 
-        TodoLogs.DeleteSucceeded(logger, TodoOperations.Delete, deleted.Id, deleted.Priority);
+        TodoLogs.DeleteSucceeded(logger, TodoOperation.Delete.Name, deleted.Id, deleted.Priority);
         return TypedResults.NoContent();
     }
 }
