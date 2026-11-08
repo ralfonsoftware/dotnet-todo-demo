@@ -59,5 +59,6 @@ public abstract class ApiTest : IDisposable
     {
         Client.Dispose();
         Factory.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

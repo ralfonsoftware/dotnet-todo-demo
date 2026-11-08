@@ -182,7 +182,7 @@ public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<Ind
     private static string NormalizeFilter(string? value) =>
         value is "all" or "done" or "open" ? value : DefaultFilter;
 
-    private static IEnumerable<string> MessagesFor(
+    private static string[] MessagesFor(
         Dictionary<string, string[]> errors, string key) =>
         errors.TryGetValue(key, out var messages) ? messages : [];
 
@@ -200,6 +200,6 @@ public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<Ind
         EmptyBody = board.EmptyBody;
     }
 
-    private IActionResult BackToBoard() =>
+    private RedirectToPageResult BackToBoard() =>
         RedirectToPage("/Index", new { view = Filter });
 }

@@ -18,18 +18,18 @@ internal readonly record struct MetricMeasurement(
 }
 
 /// <summary>
-/// Captures measurements from every instrument on the given meter. MeterListener
+/// Captures _measurements from every instrument on the given meter. MeterListener
 /// is process-global, so tests that use this run in a non-parallel collection
 /// and dispose the capture.
 /// </summary>
 internal sealed class MetricsCapture : IDisposable
 {
-    private readonly MeterListener listener;
-    private readonly ConcurrentQueue<MetricMeasurement> measurements = new();
+    private readonly MeterListener _listener;
+    private readonly ConcurrentQueue<MetricMeasurement> _measurements = new();
 
     public MetricsCapture(string meterName)
     {
-        listener = new MeterListener
+        _listener = new MeterListener
         {
             InstrumentPublished = (instrument, current) =>
             {
@@ -40,16 +40,16 @@ internal sealed class MetricsCapture : IDisposable
             }
         };
 
-        listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
+        _listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
             Record(instrument, value, tags));
-        listener.SetMeasurementEventCallback<double>((instrument, value, tags, _) =>
+        _listener.SetMeasurementEventCallback<double>((instrument, value, tags, _) =>
             Record(instrument, value, tags));
 
-        listener.Start();
+        _listener.Start();
     }
 
     public IReadOnlyList<MetricMeasurement> All(string instrumentName) =>
-        measurements
+        _measurements
             .Where(measurement => string.Equals(
                 measurement.InstrumentName, instrumentName, StringComparison.Ordinal))
             .ToArray();
@@ -61,7 +61,7 @@ internal sealed class MetricsCapture : IDisposable
         return matching[0];
     }
 
-    public void ObserveGauges() => listener.RecordObservableInstruments();
+    public void ObserveGauges() => _listener.RecordObservableInstruments();
 
     private void Record<T>(
         Instrument instrument,
@@ -75,8 +75,8 @@ internal sealed class MetricsCapture : IDisposable
             copied[tag.Key] = tag.Value;
         }
 
-        measurements.Enqueue(new MetricMeasurement(instrument.Name, instrument.Unit, value, copied));
+        _measurements.Enqueue(new MetricMeasurement(instrument.Name, instrument.Unit, value, copied));
     }
 
-    public void Dispose() => listener.Dispose();
+    public void Dispose() => _listener.Dispose();
 }

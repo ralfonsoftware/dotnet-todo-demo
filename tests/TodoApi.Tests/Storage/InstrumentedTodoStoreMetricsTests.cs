@@ -199,7 +199,7 @@ public sealed class InstrumentedTodoStoreMetricsTests
 
         metrics.ObserveGauges();
 
-        metrics.All(TodoTelemetry.Instruments.ItemsTotal).Last().Value.ShouldBe(2L);
-        metrics.All(TodoTelemetry.Instruments.ItemsDone).Last().Value.ShouldBe(1L);
+        metrics.All(TodoTelemetry.Instruments.ItemsTotal)[^1].Value.ShouldBe(2L);
+        metrics.All(TodoTelemetry.Instruments.ItemsDone)[^1].Value.ShouldBe(1L);
     }
 }

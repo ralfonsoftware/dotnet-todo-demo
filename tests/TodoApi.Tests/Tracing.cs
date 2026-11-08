@@ -16,24 +16,24 @@ public sealed class TracingCollection
 /// </summary>
 internal sealed class ActivityCapture : IDisposable
 {
-    private readonly ActivityListener listener;
-    private readonly ConcurrentQueue<Activity> started = new();
+    private readonly ActivityListener _listener;
+    private readonly ConcurrentQueue<Activity> _started = new();
 
     public ActivityCapture(params string[] sourceNames)
     {
-        listener = new ActivityListener
+        _listener = new ActivityListener
         {
             ShouldListenTo = source => sourceNames.Contains(source.Name, StringComparer.Ordinal),
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
             SampleUsingParentId = (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStarted = started.Enqueue
+            ActivityStarted = _started.Enqueue
         };
 
-        ActivitySource.AddActivityListener(listener);
+        ActivitySource.AddActivityListener(_listener);
     }
 
     public IReadOnlyList<Activity> From(string sourceName) =>
-        started.Where(activity => activity.Source.Name == sourceName).ToArray();
+        _started.Where(activity => activity.Source.Name == sourceName).ToArray();
 
     public Activity Single(string sourceName)
     {
@@ -42,5 +42,5 @@ internal sealed class ActivityCapture : IDisposable
         return activities[0];
     }
 
-    public void Dispose() => listener.Dispose();
+    public void Dispose() => _listener.Dispose();
 }
