@@ -102,4 +102,18 @@ public sealed class TelemetryOptionsTests
         Should.Throw<InvalidOperationException>(() =>
             TelemetryOptions.Resolve(TelemetrySettings.FromConfiguration(configuration), "Development"));
     }
+
+    [Fact]
+    public void Resolve_RejectsTheUndocumentedHttpAlias()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["OTEL_EXPORTER_OTLP_PROTOCOL"] = "http"
+            })
+            .Build();
+
+        Should.Throw<InvalidOperationException>(() =>
+            TelemetryOptions.Resolve(TelemetrySettings.FromConfiguration(configuration), "Development"));
+    }
 }

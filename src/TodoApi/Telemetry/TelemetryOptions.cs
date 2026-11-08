@@ -50,9 +50,6 @@ public sealed record TelemetryOptions
         };
     }
 
-    private static string? FirstSet(params string?[] values) =>
-        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
-
     private static Uri ParseEndpoint(string value)
     {
         if (!Uri.TryCreate(value, UriKind.Absolute, out var endpoint)
@@ -69,7 +66,7 @@ public sealed record TelemetryOptions
         value?.Trim().ToLowerInvariant() switch
         {
             null or "" or "grpc" => OtlpExportProtocol.Grpc,
-            "http/protobuf" or "http" => OtlpExportProtocol.HttpProtobuf,
+            "http/protobuf" => OtlpExportProtocol.HttpProtobuf,
             _ => throw new InvalidOperationException(
                 $"OpenTelemetry protocol '{value}' is not supported. Use 'grpc' or 'http/protobuf'.")
         };
@@ -81,6 +78,12 @@ public sealed record TelemetryOptions
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
             .InformationalVersion;
 
-        return FirstSet(informationalVersion, assembly.GetName().Version?.ToString()) ?? "unknown";
+        if (!string.IsNullOrWhiteSpace(informationalVersion))
+        {
+            return informationalVersion.Trim();
+        }
+
+        var assemblyVersion = assembly.GetName().Version?.ToString();
+        return string.IsNullOrWhiteSpace(assemblyVersion) ? "unknown" : assemblyVersion;
     }
 }
