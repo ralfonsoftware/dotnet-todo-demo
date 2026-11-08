@@ -1,6 +1,6 @@
 # 09 — Documentation and design verification
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 03, 04, 05, 06, 07, 08
 
 ## Scope
@@ -18,3 +18,7 @@ Blocked by: 03, 04, 05, 06, 07, 08
 ## Tests
 
 - Manual smoke run: create, list, get, update, complete (twice), delete against `dotnet run`.
+
+## Outcome
+
+`README.md` documents prerequisites, run/test commands, the endpoint table, curl examples, and links to the spec, glossary, and ADRs. Smoke run against `dotnet run` verified the full lifecycle, idempotent completion, `404` after delete, validation ProblemDetails, and an OpenAPI document containing all six operations. Launch profiles no longer open a browser. No document contradicts the implementation; `dotnet test` passes 34 tests.
