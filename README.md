@@ -61,7 +61,7 @@ Anonymous local access is enabled. The container is removed when it exits or whe
 
 ### Configuration
 
-Standard `OTEL_*` environment variables take precedence, then the `OpenTelemetry` section in configuration, then the defaults.
+Standard `OTEL_*` settings (environment variables by default) take precedence, then the `OpenTelemetry` section in configuration, then the defaults. The `OpenTelemetry` section can be supplied by any configuration provider, for example `OpenTelemetry__ServiceName` as an environment variable.
 
 | Setting | Default | Override |
 | --- | --- | --- |

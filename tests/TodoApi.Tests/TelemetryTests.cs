@@ -13,7 +13,6 @@ using TodoApi.Telemetry;
 
 namespace TodoApi.Tests;
 
-[Collection(EnvironmentVariablesCollection.Name)]
 public sealed class TelemetryTests
 {
     [Fact]
@@ -79,9 +78,11 @@ public sealed class TelemetryTests
     [Fact]
     public void Resolve_UsesDocumentedDefaults()
     {
-        using var _ = EnvironmentVariables.Clear();
+        var configuration = new ConfigurationBuilder().Build();
 
-        var options = TelemetryOptions.Resolve(new ConfigurationBuilder().Build(), "Testing");
+        var options = TelemetryOptions.Resolve(
+            TelemetrySettings.FromConfiguration(configuration),
+            "Testing");
 
         options.Enabled.ShouldBeTrue();
         options.ExporterEnabled.ShouldBeTrue();
@@ -95,8 +96,6 @@ public sealed class TelemetryTests
     [Fact]
     public void Resolve_HonorsApplicationConfiguration()
     {
-        using var _ = EnvironmentVariables.Clear();
-
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -108,7 +107,9 @@ public sealed class TelemetryTests
             })
             .Build();
 
-        var options = TelemetryOptions.Resolve(configuration, "Staging");
+        var options = TelemetryOptions.Resolve(
+            TelemetrySettings.FromConfiguration(configuration),
+            "Staging");
 
         options.Enabled.ShouldBeFalse();
         options.ExporterEnabled.ShouldBeFalse();
@@ -119,62 +120,75 @@ public sealed class TelemetryTests
     }
 
     [Fact]
-    public void Resolve_HonorsStandardOtelEnvironmentVariables()
+    public void Resolve_UsesStandardOtelSettings()
     {
-        using var _ = EnvironmentVariables.Clear().Set(
-            ("OTEL_SERVICE_NAME", "env-service"),
-            ("OTEL_EXPORTER_OTLP_ENDPOINT", "http://env-collector:4318"),
-            ("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf"));
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["OTEL_SERVICE_NAME"] = "otel-service",
+                ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://otel-collector:4318",
+                ["OTEL_EXPORTER_OTLP_PROTOCOL"] = "http/protobuf"
+            })
+            .Build();
 
-        var options = TelemetryOptions.Resolve(new ConfigurationBuilder().Build(), "Development");
+        var options = TelemetryOptions.Resolve(
+            TelemetrySettings.FromConfiguration(configuration),
+            "Development");
 
-        options.ServiceName.ShouldBe("env-service");
-        options.Endpoint.ShouldBe(new Uri("http://env-collector:4318"));
+        options.ServiceName.ShouldBe("otel-service");
+        options.Endpoint.ShouldBe(new Uri("http://otel-collector:4318"));
         options.Protocol.ShouldBe(OtlpExportProtocol.HttpProtobuf);
     }
 
     [Fact]
-    public void Resolve_EnvironmentVariablesWin_OverApplicationConfiguration()
+    public void Resolve_StandardOtelSettings_WinOverApplicationConfiguration()
     {
-        using var _ = EnvironmentVariables.Clear().Set(
-            ("OTEL_SERVICE_NAME", "env-service"),
-            ("OTEL_EXPORTER_OTLP_ENDPOINT", "http://env-collector:4317"));
-
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["OpenTelemetry:ServiceName"] = "configured-service",
-                ["OpenTelemetry:Endpoint"] = "http://configured-collector:4317"
+                ["OpenTelemetry:Endpoint"] = "http://configured-collector:4317",
+                ["OTEL_SERVICE_NAME"] = "otel-service",
+                ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://otel-collector:4317"
             })
             .Build();
 
-        var options = TelemetryOptions.Resolve(configuration, "Development");
+        var options = TelemetryOptions.Resolve(
+            TelemetrySettings.FromConfiguration(configuration),
+            "Development");
 
-        options.ServiceName.ShouldBe("env-service");
-        options.Endpoint.ShouldBe(new Uri("http://env-collector:4317"));
+        options.ServiceName.ShouldBe("otel-service");
+        options.Endpoint.ShouldBe(new Uri("http://otel-collector:4317"));
     }
 
     [Fact]
-    public void Resolve_OtelSdkDisabled_DisablesTelemetry()
+    public void Resolve_SdkDisabled_DisablesTelemetry()
     {
-        using var _ = EnvironmentVariables.Clear().Set(("OTEL_SDK_DISABLED", "true"));
-
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["OpenTelemetry:Enabled"] = "true"
+                ["OpenTelemetry:Enabled"] = "true",
+                ["OTEL_SDK_DISABLED"] = "true"
             })
             .Build();
 
-        TelemetryOptions.Resolve(configuration, "Development").Enabled.ShouldBeFalse();
+        TelemetryOptions.Resolve(TelemetrySettings.FromConfiguration(configuration), "Development")
+            .Enabled.ShouldBeFalse();
     }
 
     [Fact]
     public void Resolve_UsesOtlpHttpDefaultPort_WhenProtocolIsHttpProtobuf()
     {
-        using var _ = EnvironmentVariables.Clear().Set(("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf"));
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["OTEL_EXPORTER_OTLP_PROTOCOL"] = "http/protobuf"
+            })
+            .Build();
 
-        var options = TelemetryOptions.Resolve(new ConfigurationBuilder().Build(), "Development");
+        var options = TelemetryOptions.Resolve(
+            TelemetrySettings.FromConfiguration(configuration),
+            "Development");
 
         options.Protocol.ShouldBe(OtlpExportProtocol.HttpProtobuf);
         options.Endpoint.ShouldBe(new Uri("http://localhost:4318"));
@@ -183,9 +197,14 @@ public sealed class TelemetryTests
     [Fact]
     public void Resolve_RejectsInvalidProtocol()
     {
-        using var _ = EnvironmentVariables.Clear().Set(("OTEL_EXPORTER_OTLP_PROTOCOL", "carrier-pigeon"));
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["OTEL_EXPORTER_OTLP_PROTOCOL"] = "carrier-pigeon"
+            })
+            .Build();
 
         Should.Throw<InvalidOperationException>(() =>
-            TelemetryOptions.Resolve(new ConfigurationBuilder().Build(), "Development"));
+            TelemetryOptions.Resolve(TelemetrySettings.FromConfiguration(configuration), "Development"));
     }
 }

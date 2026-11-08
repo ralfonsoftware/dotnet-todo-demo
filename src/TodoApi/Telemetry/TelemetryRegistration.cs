@@ -17,7 +17,8 @@ public static class TelemetryRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        var options = TelemetryOptions.Resolve(configuration, environmentName);
+        var settings = TelemetrySettings.FromConfiguration(configuration);
+        var options = TelemetryOptions.Resolve(settings, environmentName);
         services.AddSingleton(options);
 
         if (!options.Enabled)

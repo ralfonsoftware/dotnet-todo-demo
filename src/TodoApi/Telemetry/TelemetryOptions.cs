@@ -4,13 +4,12 @@ using OpenTelemetry.Exporter;
 namespace TodoApi.Telemetry;
 
 /// <summary>
-/// Resolved telemetry settings. Values come from standard <c>OTEL_*</c>
-/// environment variables first, then the <c>OpenTelemetry</c> configuration
-/// section, then the defaults below.
+/// Resolved telemetry settings. Values come from <see cref="TelemetrySettings"/>,
+/// which applies the standard <c>OTEL_*</c> settings first, then the
+/// <c>OpenTelemetry</c> configuration section, then the defaults below.
 /// </summary>
 public sealed record TelemetryOptions
 {
-    public const string SectionName = "OpenTelemetry";
     public const string DefaultServiceName = "todo-api";
     public const string DefaultGrpcEndpoint = "http://localhost:4317";
     public const string DefaultHttpEndpoint = "http://localhost:4318";
@@ -29,30 +28,21 @@ public sealed record TelemetryOptions
 
     public required OtlpExportProtocol Protocol { get; init; }
 
-    public static TelemetryOptions Resolve(IConfiguration configuration, string environmentName)
+    public static TelemetryOptions Resolve(TelemetrySettings settings, string environmentName)
     {
-        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(settings);
 
-        var section = configuration.GetSection(SectionName);
-        var sdkDisabled = IsTrue(Environment.GetEnvironmentVariable("OTEL_SDK_DISABLED"));
+        var protocol = ParseProtocol(settings.Protocol);
 
-        var protocol = ParseProtocol(FirstSet(
-            Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL"),
-            section["Protocol"]));
-
-        var endpoint = FirstSet(
-            Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"),
-            section["Endpoint"]) is { } endpointValue
+        var endpoint = settings.Endpoint is { } endpointValue
             ? ParseEndpoint(endpointValue)
             : new Uri(protocol == OtlpExportProtocol.HttpProtobuf ? DefaultHttpEndpoint : DefaultGrpcEndpoint);
 
         return new TelemetryOptions
         {
-            Enabled = (section.GetValue<bool?>("Enabled") ?? true) && !sdkDisabled,
-            ExporterEnabled = section.GetValue<bool?>("ExporterEnabled") ?? true,
-            ServiceName = FirstSet(
-                Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME"),
-                section["ServiceName"]) ?? DefaultServiceName,
+            Enabled = (settings.Enabled ?? true) && !settings.SdkDisabled,
+            ExporterEnabled = settings.ExporterEnabled ?? true,
+            ServiceName = settings.ServiceName ?? DefaultServiceName,
             ServiceVersion = ResolveServiceVersion(),
             DeploymentEnvironment = environmentName,
             Endpoint = endpoint,
@@ -62,9 +52,6 @@ public sealed record TelemetryOptions
 
     private static string? FirstSet(params string?[] values) =>
         values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
-
-    private static bool IsTrue(string? value) =>
-        string.Equals(value?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
 
     private static Uri ParseEndpoint(string value)
     {
