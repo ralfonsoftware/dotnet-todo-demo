@@ -184,7 +184,7 @@ public sealed class TodoLogsTests : IDisposable
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 
-        var log = SingleLog(TodoEventIds.ValidationRejected);
+        var log = SingleLog(TodoEventIds.CreateValidationRejected);
         log.Level.ShouldBe(LogLevel.Warning);
         log.Properties["Operation"].ShouldBe("create");
         log.Properties["ErrorCount"].ShouldBe(2);
@@ -202,9 +202,10 @@ public sealed class TodoLogsTests : IDisposable
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 
-        var log = SingleLog(TodoEventIds.ValidationRejected);
+        var log = SingleLog(TodoEventIds.UpdateValidationRejected);
         log.Level.ShouldBe(LogLevel.Warning);
         log.Properties["Operation"].ShouldBe("update");
+        log.Properties["TodoId"].ShouldBe(item.Id);
         log.Properties["ErrorCount"].ShouldBe(1);
         _factory.Logs.Records.ShouldNotContain(
             record => record.EventId.Id == TodoEventIds.UpdateSucceeded);

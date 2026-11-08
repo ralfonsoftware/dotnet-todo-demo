@@ -51,10 +51,17 @@ internal static partial class TodoLogs
     public static partial void NotFound(ILogger logger, int todoId, string operation);
 
     [LoggerMessage(
-        EventId = TodoEventIds.ValidationRejected,
+        EventId = TodoEventIds.CreateValidationRejected,
         Level = LogLevel.Warning,
         Message = "{Operation} rejected with {ErrorCount} validation error(s).")]
-    public static partial void ValidationRejected(ILogger logger, string operation, int errorCount);
+    public static partial void CreateValidationRejected(ILogger logger, string operation, int errorCount);
+
+    [LoggerMessage(
+        EventId = TodoEventIds.UpdateValidationRejected,
+        Level = LogLevel.Warning,
+        Message = "{Operation} rejected for Todo Item {TodoId} with {ErrorCount} validation error(s).")]
+    public static partial void UpdateValidationRejected(
+        ILogger logger, string operation, int todoId, int errorCount);
 
     [LoggerMessage(
         EventId = TodoEventIds.GetSucceeded,

@@ -29,7 +29,7 @@ internal static class CreateTodo
         var errors = TodoInput.Validate(request.Title, request.Description);
         if (errors.Count > 0)
         {
-            TodoLogs.ValidationRejected(logger, TodoOperations.Create, errors.Count);
+            TodoLogs.CreateValidationRejected(logger, TodoOperations.Create, errors.Count);
             return TypedResults.ValidationProblem(errors);
         }
 

@@ -21,7 +21,8 @@ public static class TodoEventIds
 
     public const int NotFound = 1101;
 
-    public const int ValidationRejected = 1201;
+    public const int CreateValidationRejected = 1201;
+    public const int UpdateValidationRejected = 1202;
 
     public const int GetSucceeded = 1301;
     public const int ListSucceeded = 1302;

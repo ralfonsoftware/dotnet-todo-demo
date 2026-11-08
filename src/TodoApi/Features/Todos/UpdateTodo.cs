@@ -29,7 +29,7 @@ internal static class UpdateTodo
         var errors = TodoInput.Validate(request.Title, request.Description);
         if (errors.Count > 0)
         {
-            TodoLogs.ValidationRejected(logger, TodoOperations.Update, errors.Count);
+            TodoLogs.UpdateValidationRejected(logger, TodoOperations.Update, id, errors.Count);
             return TypedResults.ValidationProblem(errors);
         }
 
