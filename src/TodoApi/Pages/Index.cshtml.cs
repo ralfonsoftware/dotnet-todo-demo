@@ -1,23 +1,19 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Logging;
 using TodoApi.Domain;
 using TodoApi.Storage;
 
 namespace TodoApi.Pages;
 
-public sealed class IndexModel : PageModel
+public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<IndexModel> logger) : PageModel
 {
     private const string DefaultFilter = "open";
 
-    private readonly ITodoStore _store;
-    private readonly TimeProvider _clock;
+    private readonly ITodoStore _store = store;
+    private readonly TimeProvider _clock = clock;
+    private readonly BoardMutations _mutations = new(store, logger);
     private string _filter = DefaultFilter;
-
-    public IndexModel(ITodoStore store, TimeProvider clock)
-    {
-        _store = store;
-        _clock = clock;
-    }
 
     [BindProperty(SupportsGet = true, Name = "view")]
     public string Filter
@@ -92,6 +88,8 @@ public sealed class IndexModel : PageModel
 
         if (!TodoDraft.TryCreate(NewTitle, NewDescription, NewPriority, out var draft, out var errors))
         {
+            _mutations.CreateRejected(errors.Count);
+
             foreach (var message in MessagesFor(errors, "title"))
             {
                 ModelState.AddModelError(nameof(NewTitle), message);
@@ -106,11 +104,7 @@ public sealed class IndexModel : PageModel
             return Page();
         }
 
-        var item = _store.Create(
-            draft.Title,
-            draft.Description,
-            draft.Priority,
-            _clock.GetUtcNow());
+        var item = _mutations.Create(draft, _clock.GetUtcNow());
 
         TempData["Toast"] = $"Added \u201c{item.Title}\u201d.";
         return BackToBoard();
@@ -120,6 +114,8 @@ public sealed class IndexModel : PageModel
     {
         if (!TodoDraft.TryCreate(editTitle, editDescription, editPriority, out var draft, out var errors))
         {
+            _mutations.UpdateRejected(id, errors.Count);
+
             EditId = id;
             EditTitle = editTitle ?? string.Empty;
             EditDescription = editDescription ?? string.Empty;
@@ -131,7 +127,7 @@ public sealed class IndexModel : PageModel
             return Page();
         }
 
-        if (_store.Update(id, draft.Title, draft.Description, draft.Priority) is null)
+        if (_mutations.Update(id, draft) is null)
         {
             TempData["Toast"] = "That todo no longer exists.";
         }
@@ -145,7 +141,7 @@ public sealed class IndexModel : PageModel
 
     public IActionResult OnPostComplete(int id)
     {
-        var result = _store.Complete(id, _clock.GetUtcNow());
+        var result = _mutations.Complete(id, _clock.GetUtcNow());
         TempData["Toast"] = result switch
         {
             CompletionResult.Completed => "Done. One less thing to think about.",
@@ -158,7 +154,7 @@ public sealed class IndexModel : PageModel
 
     public IActionResult OnPostDelete(int id)
     {
-        var item = _store.Delete(id);
+        var item = _mutations.Delete(id);
         TempData["Toast"] = item is null
             ? "That todo no longer exists."
             : $"Deleted \u201c{item.Title}\u201d.";
