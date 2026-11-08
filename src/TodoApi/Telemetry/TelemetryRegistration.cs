@@ -33,13 +33,19 @@ public static class TelemetryRegistration
                 })
                 .AddService(options.ServiceName, serviceVersion: options.ServiceVersion));
 
+        void ConfigureExporter(OtlpExporterOptions exporter)
+        {
+            exporter.Endpoint = options.Endpoint;
+            exporter.Protocol = options.Protocol;
+        }
+
         openTelemetry.WithTracing(tracing =>
         {
             tracing.AddAspNetCoreInstrumentation().AddHttpClientInstrumentation();
 
             if (options.ExporterEnabled)
             {
-                tracing.AddOtlpExporter(exporter => ConfigureExporter(exporter, options));
+                tracing.AddOtlpExporter(ConfigureExporter);
             }
         });
 
@@ -51,24 +57,24 @@ public static class TelemetryRegistration
 
             if (options.ExporterEnabled)
             {
-                metrics.AddOtlpExporter(exporter => ConfigureExporter(exporter, options));
+                metrics.AddOtlpExporter(ConfigureExporter);
             }
         });
 
-        openTelemetry.WithLogging(logging =>
-        {
-            if (options.ExporterEnabled)
+        openTelemetry.WithLogging(
+            logging =>
             {
-                logging.AddOtlpExporter(exporter => ConfigureExporter(exporter, options));
-            }
-        });
+                if (options.ExporterEnabled)
+                {
+                    logging.AddOtlpExporter(ConfigureExporter);
+                }
+            },
+            loggingOptions =>
+            {
+                loggingOptions.IncludeFormattedMessage = true;
+                loggingOptions.IncludeScopes = true;
+            });
 
         return services;
-    }
-
-    private static void ConfigureExporter(OtlpExporterOptions exporter, TelemetryOptions options)
-    {
-        exporter.Endpoint = options.Endpoint;
-        exporter.Protocol = options.Protocol;
     }
 }

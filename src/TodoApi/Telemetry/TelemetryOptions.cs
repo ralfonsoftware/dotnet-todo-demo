@@ -12,8 +12,8 @@ public sealed record TelemetryOptions
 {
     public const string SectionName = "OpenTelemetry";
     public const string DefaultServiceName = "todo-api";
-    public const string GrpcEndpoint = "http://localhost:4317";
-    public const string HttpEndpoint = "http://localhost:4318";
+    public const string DefaultGrpcEndpoint = "http://localhost:4317";
+    public const string DefaultHttpEndpoint = "http://localhost:4318";
 
     public required bool Enabled { get; init; }
 
@@ -44,7 +44,7 @@ public sealed record TelemetryOptions
             Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"),
             section["Endpoint"]) is { } endpointValue
             ? ParseEndpoint(endpointValue)
-            : new Uri(protocol == OtlpExportProtocol.HttpProtobuf ? HttpEndpoint : GrpcEndpoint);
+            : new Uri(protocol == OtlpExportProtocol.HttpProtobuf ? DefaultHttpEndpoint : DefaultGrpcEndpoint);
 
         return new TelemetryOptions
         {
@@ -90,7 +90,9 @@ public sealed record TelemetryOptions
     private static string ResolveServiceVersion()
     {
         var assembly = typeof(TelemetryOptions).Assembly;
-        var informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        var informationalVersion = assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion;
 
         return FirstSet(informationalVersion, assembly.GetName().Version?.ToString()) ?? "unknown";
     }
