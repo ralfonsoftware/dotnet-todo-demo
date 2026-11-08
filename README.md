@@ -168,6 +168,10 @@ curl -X POST http://localhost:5266/todos/1/complete
 - **Errors** are RFC 9457 ProblemDetails.
 - **Timestamps** are ISO 8601 UTC with a `+00:00` offset.
 
+## Third-party assets
+
+- **Plus Jakarta Sans** (variable, weights 200–800), © The Plus Jakarta Sans Project Authors, licensed under the [SIL Open Font License 1.1](src/TodoApi/wwwroot/fonts/OFL.txt). The board serves it from `/fonts/` (from [`tokotype/PlusJakartaSans`](https://github.com/tokotype/PlusJakartaSans), `fonts/webfonts/PlusJakartaSans[wght].woff2` at commit `6d4ffaf`), so it makes no requests to third-party hosts and works offline.
+
 ## Design
 
 - [Spec](.scratch/todo-api/spec.md)

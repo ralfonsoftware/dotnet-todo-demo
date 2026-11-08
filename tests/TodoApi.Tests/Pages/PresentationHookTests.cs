@@ -58,6 +58,34 @@ public sealed class PresentationHookTests : ApiTest
         js.ShouldContain(PresentationHooks.NewTitleId);
     }
 
+    [Fact]
+    public async Task Board_MakesNoThirdPartyFontRequests()
+    {
+        var html = await GetTextAsync("/");
+        var css = await GetTextAsync("/css/site.css");
+
+        foreach (var text in new[] { html, css })
+        {
+            text.ShouldNotContain("googleapis");
+            text.ShouldNotContain("gstatic");
+        }
+
+        css.ShouldContain("url(\"../fonts/PlusJakartaSans-Variable.woff2\")");
+    }
+
+    [Fact]
+    public async Task SelfHostedFont_IsServedWithItsLicense()
+    {
+        using var font = await Client.GetAsync(
+            "/fonts/PlusJakartaSans-Variable.woff2", TestContext.Current.CancellationToken);
+
+        font.StatusCode.ShouldBe(HttpStatusCode.OK);
+        font.Content.Headers.ContentType.ShouldNotBeNull().MediaType.ShouldBe("font/woff2");
+
+        var license = await GetTextAsync("/fonts/OFL.txt");
+        license.ShouldContain("SIL OPEN FONT LICENSE Version 1.1");
+    }
+
     [Theory]
     [InlineData(BoardFilter.Open, "open")]
     [InlineData(BoardFilter.Done, "done")]
