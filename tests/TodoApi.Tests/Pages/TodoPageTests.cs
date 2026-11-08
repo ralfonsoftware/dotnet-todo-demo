@@ -215,6 +215,66 @@ public sealed class TodoPageTests : ApiTest
     }
 
     [Fact]
+    public async Task Home_DoneViewWithNoCompletions_ShowsDoneEmptyCopy()
+    {
+        var html = await GetHtmlAsync("/?view=done");
+
+        html.ShouldContain("Nothing completed yet");
+        html.ShouldContain("Finished todos will collect here. Complete one to see it.");
+    }
+
+    [Fact]
+    public async Task Home_AllViewWithNoTodos_ShowsAllEmptyCopy()
+    {
+        var html = await GetHtmlAsync("/?view=all");
+
+        html.ShouldContain("Your list is empty");
+        html.ShouldContain("Add your first todo above and it will show up here.");
+    }
+
+    [Fact]
+    public async Task Home_PercentDoneRoundsTwoOfThreeTo67()
+    {
+        var first = Seed("First");
+        var second = Seed("Second");
+        Seed("Third");
+        Store.Complete(first.Id, Now);
+        Store.Complete(second.Id, Now);
+
+        var html = await GetHtmlAsync("/");
+
+        html.ShouldContain("67%");
+        html.ShouldContain("2 of 3 done");
+    }
+
+    [Fact]
+    public async Task Home_DoneViewSortsByMostRecentlyCompleted()
+    {
+        var first = Seed("Completed first");
+        var second = Seed("Completed second");
+
+        Store.Complete(first.Id, Now);
+        Factory.Clock.Advance(TimeSpan.FromMinutes(5));
+        Store.Complete(second.Id, Now);
+
+        var html = await GetHtmlAsync("/?view=done");
+
+        html.IndexOf("Completed second", StringComparison.Ordinal)
+            .ShouldBeLessThan(html.IndexOf("Completed first", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Home_EditDeepLinkWithMissingId_RendersNoEditor()
+    {
+        Seed("Visible todo");
+
+        var html = await GetHtmlAsync("/?edit=999");
+
+        html.ShouldContain("Visible todo");
+        html.ShouldNotContain("name=\"editTitle\"");
+    }
+
+    [Fact]
     public async Task Post_WithoutAntiforgeryToken_IsRejected()
     {
         var response = await Client.PostAsync(

@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TodoApi.Domain;
@@ -51,6 +50,10 @@ public sealed class IndexModel : PageModel
 
     public string TodayLabel { get; private set; } = string.Empty;
 
+    public string EmptyTitle { get; private set; } = string.Empty;
+
+    public string EmptyBody { get; private set; } = string.Empty;
+
     public bool DescriptionHasError =>
         ModelState.TryGetValue(nameof(NewDescription), out var entry) && entry.Errors.Count > 0;
 
@@ -64,21 +67,19 @@ public sealed class IndexModel : PageModel
 
     public void OnGet()
     {
-        if (EditId is { } id)
-        {
-            if (_store.Get(id) is { } item)
-            {
-                EditTitle = item.Title;
-                EditDescription = item.Description ?? string.Empty;
-                EditPriority = item.Priority;
-            }
-            else
-            {
-                EditId = null;
-            }
-        }
+        var board = BoardReadModel.Create(_store.GetAll(), Filter, EditId, _clock.GetLocalNow());
+        Apply(board);
 
-        Load();
+        if (board.Edit is { } edit)
+        {
+            EditTitle = edit.Title;
+            EditDescription = edit.Description;
+            EditPriority = edit.Priority;
+        }
+        else
+        {
+            EditId = null;
+        }
     }
 
     public IActionResult OnPostCreate()
@@ -172,34 +173,18 @@ public sealed class IndexModel : PageModel
         Dictionary<string, string[]> errors, string key) =>
         errors.TryGetValue(key, out var messages) ? messages : [];
 
-    private void Load()
+    private void Load() =>
+        Apply(BoardReadModel.Create(_store.GetAll(), Filter, editId: null, _clock.GetLocalNow()));
+
+    private void Apply(BoardReadModel board)
     {
-        var all = _store.GetAll();
-        TotalCount = all.Count;
-        OpenCount = all.Count(item => !item.Done);
-        PercentDone = TotalCount == 0
-            ? 0
-            : (int)Math.Round(DoneCount * 100d / TotalCount, MidpointRounding.AwayFromZero);
-
-        var open = all
-            .Where(item => !item.Done)
-            .OrderByDescending(item => item.Priority)
-            .ThenBy(item => item.CreatedAt)
-            .ToArray();
-
-        var done = all
-            .Where(item => item.Done)
-            .OrderByDescending(item => item.CompletedAt)
-            .ToArray();
-
-        Items = Filter switch
-        {
-            "all" => [.. open, .. done],
-            "done" => done,
-            _ => open
-        };
-
-        TodayLabel = _clock.GetLocalNow().ToString("dddd, d MMMM", CultureInfo.InvariantCulture);
+        Items = board.Items;
+        TotalCount = board.TotalCount;
+        OpenCount = board.OpenCount;
+        PercentDone = board.PercentDone;
+        TodayLabel = board.TodayLabel;
+        EmptyTitle = board.EmptyTitle;
+        EmptyBody = board.EmptyBody;
     }
 
     private IActionResult BackToBoard() =>

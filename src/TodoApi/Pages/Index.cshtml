@@ -2,20 +2,6 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Today";
-
-    var emptyTitle = Model.Filter switch
-    {
-        "done" => "Nothing completed yet",
-        "all" => "Your list is empty",
-        _ => "All clear"
-    };
-
-    var emptyBody = Model.Filter switch
-    {
-        "done" => "Finished todos will collect here. Complete one to see it.",
-        "all" => "Add your first todo above and it will show up here.",
-        _ => "There is nothing left to do. Add something new when it comes to mind."
-    };
 }
 
 <section class="intro">
@@ -138,8 +124,8 @@
                     <path d="M8 8.5h8M8 12h5M8 15.5h6" />
                 </svg>
             </span>
-            <h3>@emptyTitle</h3>
-            <p>@emptyBody</p>
+            <h3>@Model.EmptyTitle</h3>
+            <p>@Model.EmptyBody</p>
             @if (Model.Filter != "done")
             {
                 <a href="#new">Add a todo</a>
