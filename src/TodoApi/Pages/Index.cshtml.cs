@@ -22,6 +22,7 @@ public sealed class IndexModel(
     private readonly TimeProvider _clock = clock;
     private readonly ILogger<TodoLogCategory> _logger = logger;
     private string _filter = DefaultFilter;
+    private BoardReadModel? _board;
 
     [BindProperty(SupportsGet = true, Name = "view")]
     public string Filter
@@ -42,21 +43,9 @@ public sealed class IndexModel(
     [BindProperty]
     public Priority NewPriority { get; set; } = TodoDraft.DefaultPriority;
 
-    public IReadOnlyList<TodoItem> Items { get; private set; } = [];
-
-    public int TotalCount { get; private set; }
-
-    public int OpenCount { get; private set; }
-
-    public int DoneCount => TotalCount - OpenCount;
-
-    public int PercentDone { get; private set; }
-
-    public string TodayLabel { get; private set; } = string.Empty;
-
-    public string EmptyTitle { get; private set; } = string.Empty;
-
-    public string EmptyBody { get; private set; } = string.Empty;
+    /// <summary>The board state the view renders. Every handler that renders the page loads it.</summary>
+    public BoardReadModel Board =>
+        _board ?? throw new InvalidOperationException("The board has not been loaded for this request.");
 
     public bool DescriptionHasError =>
         ModelState.TryGetValue(nameof(NewDescription), out var entry) && entry.Errors.Count > 0;
@@ -74,10 +63,9 @@ public sealed class IndexModel(
 
     public void OnGet()
     {
-        var board = BoardReadModel.Create(_store.GetAll(), Filter, EditId, _clock.GetLocalNow());
-        Apply(board);
+        _board = BoardReadModel.Create(_store.GetAll(), Filter, EditId, _clock.GetLocalNow());
 
-        if (board.Edit is { } edit)
+        if (_board.Edit is { } edit)
         {
             EditTitle = edit.Title;
             EditDescription = edit.Description;
@@ -195,18 +183,7 @@ public sealed class IndexModel(
         errors.TryGetValue(key, out var messages) ? messages : [];
 
     private void Load() =>
-        Apply(BoardReadModel.Create(_store.GetAll(), Filter, editId: null, _clock.GetLocalNow()));
-
-    private void Apply(BoardReadModel board)
-    {
-        Items = board.Items;
-        TotalCount = board.TotalCount;
-        OpenCount = board.OpenCount;
-        PercentDone = board.PercentDone;
-        TodayLabel = board.TodayLabel;
-        EmptyTitle = board.EmptyTitle;
-        EmptyBody = board.EmptyBody;
-    }
+        _board = BoardReadModel.Create(_store.GetAll(), Filter, editId: null, _clock.GetLocalNow());
 
     private RedirectToPageResult BackToBoard() =>
         RedirectToPage("/Index", new { view = Filter });
