@@ -174,7 +174,8 @@ curl -X POST http://localhost:5266/todos/1/complete
 
 ## Design
 
-- [Spec](.scratch/todo-api/spec.md)
+- [API spec](.scratch/todo-api/spec.md)
+- [Board spec](.scratch/todo-board/spec.md)
 - [Glossary](GLOSSARY.md)
 - [ADR-0001: vertical slice architecture](docs/adr/0001-vertical-slice-architecture.md)
 - [ADR-0002: in-memory store](docs/adr/0002-in-memory-store.md)
@@ -182,4 +183,5 @@ curl -X POST http://localhost:5266/todos/1/complete
 - [ADR-0004: Completion is a reported transition](docs/adr/0004-completion-is-a-reported-transition.md)
 - [ADR-0005: server-rendered Razor Pages UI](docs/adr/0005-server-rendered-razor-pages-ui.md)
 - [ADR-0006: the store decorator owns Todo Item outcome logs](docs/adr/0006-store-decorator-owns-outcome-logs.md)
-- Implementation tickets: [`.scratch/todo-api/issues/`](.scratch/todo-api/issues/)
+- API implementation tickets: [`.scratch/todo-api/issues/`](.scratch/todo-api/issues/)
+- OpenTelemetry tickets: [`.scratch/opentelemetry/issues/`](.scratch/opentelemetry/issues/)
