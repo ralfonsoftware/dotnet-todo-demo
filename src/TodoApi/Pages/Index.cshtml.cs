@@ -129,10 +129,7 @@ public sealed class IndexModel(
             EditError = ModelState.TryGetValue(nameof(editPriority), out var priorityState) &&
                         priorityState is { Errors.Count: > 0 }
                 ? "Choose a valid priority."
-                : ModelState.Values
-                    .SelectMany(entry => entry.Errors)
-                    .Select(error => error.ErrorMessage)
-                    .First(message => !string.IsNullOrWhiteSpace(message));
+                : BoardErrors.FirstErrorMessage(ModelState);
             Load();
             return Page();
         }
