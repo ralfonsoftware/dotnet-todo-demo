@@ -1,6 +1,6 @@
 # 04 — Get todo by id
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 ## Scope
@@ -18,3 +18,7 @@ Blocked by: 02
 - Existing item returns every field.
 - Unknown id returns a `404` problem with `status: 404`.
 - Non-numeric id returns `404`.
+
+## Outcome
+
+`GET /todos/{id:int}` returns the item or a `404` ProblemDetails; non-numeric ids fall through the route constraint.
