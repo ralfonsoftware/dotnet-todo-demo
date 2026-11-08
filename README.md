@@ -1,5 +1,8 @@
 # Todo API
 
+[![CI](https://github.com/ralfonsoftware/dotnet-todo-demo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ralfonsoftware/dotnet-todo-demo/actions/workflows/ci.yml)
+[![Actions](https://img.shields.io/badge/GitHub-Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/ralfonsoftware/dotnet-todo-demo/actions)
+
 A small demo REST API for tracking Todo Items through to completion. It is built as a .NET 10 minimal API in a vertical-slice style, with an in-memory store, OpenAPI, Scalar UI, and a server-rendered Razor Pages board for everyday use.
 
 ## Prerequisites
