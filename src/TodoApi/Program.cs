@@ -15,7 +15,9 @@ builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadReq
 
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
-builder.Services.AddSingleton<ITodoStore, InMemoryTodoStore>();
+builder.Services.AddSingleton<InMemoryTodoStore>();
+builder.Services.AddSingleton<ITodoStore>(services =>
+    new TracingTodoStore(services.GetRequiredService<InMemoryTodoStore>()));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddTodoApiTelemetry(builder.Configuration, builder.Environment.EnvironmentName);
 

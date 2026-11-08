@@ -34,7 +34,7 @@ dotnet run --project src/TodoApi
 curl http://localhost:5266/todos
 ```
 
-Open `http://localhost:18888` and select the `todo-api` service. The dashboard shows ASP.NET Core request traces, HttpClient traces, ASP.NET Core/HttpClient/Runtime metrics, and application logs.
+Open `http://localhost:18888` and select the `todo-api` service. The dashboard shows ASP.NET Core request traces, Todos Store spans nested under them, HttpClient traces, ASP.NET Core/HttpClient/Runtime metrics, and application logs.
 
 The launcher uses the pinned image `mcr.microsoft.com/aspire/dashboard:13.6.4` and maps:
 
@@ -62,6 +62,21 @@ Standard `OTEL_*` environment variables take precedence, then the `OpenTelemetry
 `service.version` comes from the assembly, and `deployment.environment` is the ASP.NET Core environment name. With `http/protobuf`, the default endpoint becomes `http://localhost:4318` when none is configured.
 
 Tests run in the `Testing` environment, which disables both the pipeline and the exporter, so `dotnet test` needs no dashboard and makes no outbound telemetry attempts.
+
+### Todos Store spans
+
+Every Todos Store operation emits one span from the `TodoApi.TodosStore` activity source (`ActivityKind.Internal`), nested under the active HTTP request span:
+
+| Span | `todo.operation` | `todo.outcome` |
+| --- | --- | --- |
+| `todos.list` | `list` | `found` |
+| `todos.get` | `get` | `found`, `not found` |
+| `todos.create` | `create` | `created` |
+| `todos.update` | `update` | `updated`, `not found` |
+| `todos.complete` | `complete` | `completed`, `already done`, `not found` |
+| `todos.delete` | `delete` | `deleted`, `not found` |
+
+`todo.id` carries the Todo Item id when one is involved. `todo.priority` carries `low`, `medium`, or `high` when an item or priority is involved (`get`, `create`, `update`, `complete`, and `delete`); `list` has no single item, so it carries neither tag. Spans never carry the Todo Item title or description.
 
 ## Test
 
