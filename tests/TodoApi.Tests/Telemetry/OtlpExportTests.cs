@@ -121,7 +121,8 @@ public sealed class OtlpExportTests
 
         public void Dispose()
         {
-            _listener.Stop();
+            // Close alone: Stop followed by Close makes the managed listener
+            // re-bind the port on teardown, which fails if it was reused.
             _listener.Close();
             _loop.Wait(TimeSpan.FromSeconds(5));
         }
