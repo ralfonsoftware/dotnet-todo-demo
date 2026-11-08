@@ -35,7 +35,7 @@
             <div class="composer-field">
                 <label class="sr-only" asp-for="NewTitle">Todo title</label>
                 <input asp-for="NewTitle" id="@PresentationHooks.NewTitleId" class="composer-input"
-                       placeholder="What needs doing?" autocomplete="off" maxlength="200" required />
+                       placeholder="What needs doing?" autocomplete="off" maxlength="@TodoDraft.TitleMaxLength" required />
             </div>
             <button class="btn btn-primary" type="submit">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -72,7 +72,7 @@
                     Add a note
                 </summary>
                 <label class="sr-only" asp-for="NewDescription">Note</label>
-                <textarea asp-for="NewDescription" class="field-input" rows="2" maxlength="2000"
+                <textarea asp-for="NewDescription" class="field-input" rows="2" maxlength="@TodoDraft.DescriptionMaxLength"
                           placeholder="A little more detail (optional)"></textarea>
                 <span class="field-error" asp-validation-for="NewDescription"></span>
             </details>
@@ -141,12 +141,12 @@
                                 <div class="field span-2">
                                     <label for="edit-title-@item.Id">Title</label>
                                     <input class="field-input" id="edit-title-@item.Id" name="editTitle"
-                                           value="@Model.EditTitle" maxlength="200" required autofocus />
+                                           value="@Model.EditTitle" maxlength="@TodoDraft.TitleMaxLength" required autofocus />
                                 </div>
                                 <div class="field span-2">
                                     <label for="edit-note-@item.Id">Note</label>
                                     <textarea class="field-input" id="edit-note-@item.Id" name="editDescription"
-                                              rows="2" maxlength="2000">@Model.EditDescription</textarea>
+                                              rows="2" maxlength="@TodoDraft.DescriptionMaxLength">@Model.EditDescription</textarea>
                                 </div>
                                 <div class="field span-2">
                                     <p class="field-label" id="edit-priority-label-@item.Id">Priority</p>

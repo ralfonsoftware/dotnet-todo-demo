@@ -407,6 +407,24 @@ public sealed class TodoPageTests : ApiTest
     }
 
     [Fact]
+    public async Task Forms_TakeTheirLengthLimitsFromTodoDraft()
+    {
+        var item = Seed("Editable todo");
+
+        var html = await GetHtmlAsync($"/?edit={item.Id}");
+
+        foreach (var titleId in new[] { "NewTitle", $"edit-title-{item.Id}" })
+        {
+            ControlAttribute(html, titleId, "maxlength").ShouldBe($"{TodoDraft.TitleMaxLength}");
+        }
+
+        foreach (var noteId in new[] { "NewDescription", $"edit-note-{item.Id}" })
+        {
+            ControlAttribute(html, noteId, "maxlength").ShouldBe($"{TodoDraft.DescriptionMaxLength}");
+        }
+    }
+
+    [Fact]
     public async Task Home_WithUnknownView_ShowsTheOpenFilter()
     {
         Seed("Open task");
@@ -523,7 +541,10 @@ public sealed class TodoPageTests : ApiTest
         response.Headers.Location.ShouldNotBeNull().ToString().ShouldBe($"/?view={view}");
     }
 
-    private static string ControlName(string html, string controlId)
+    private static string ControlName(string html, string controlId) =>
+        ControlAttribute(html, controlId, "name");
+
+    private static string ControlAttribute(string html, string controlId, string attribute)
     {
         var tag = Regex.Match(
             html,
@@ -533,12 +554,12 @@ public sealed class TodoPageTests : ApiTest
         tag.Success.ShouldBeTrue(
             $"The page should render an input or textarea whose id is \u201c{controlId}\u201d.");
 
-        var name = Regex.Match(tag.Value, @"\sname=""(?<name>[^""]+)""");
+        var value = Regex.Match(tag.Value, $@"\s{Regex.Escape(attribute)}=""(?<value>[^""]+)""");
 
-        name.Success.ShouldBeTrue(
-            $"The control with id \u201c{controlId}\u201d should have a name attribute.");
+        value.Success.ShouldBeTrue(
+            $"The control with id \u201c{controlId}\u201d should have a {attribute} attribute.");
 
-        return name.Groups["name"].Value;
+        return value.Groups["value"].Value;
     }
 
     private static string AntiforgeryToken(string html)
