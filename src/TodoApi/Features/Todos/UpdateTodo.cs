@@ -42,8 +42,7 @@ internal static class UpdateTodo
 
         if (item is null)
         {
-            TodoLogs.NotFound(logger, id, TodoOperation.Update.Name);
-            return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
+            return TodoResults.NotFound(logger, id, TodoOperation.Update);
         }
 
         TodoLogs.UpdateSucceeded(logger, TodoOperation.Update.Name, item.Id, item.Priority);

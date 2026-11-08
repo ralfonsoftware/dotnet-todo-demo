@@ -26,8 +26,7 @@ internal static class CompleteTodo
         switch (result)
         {
             case CompletionResult.NotFound:
-                TodoLogs.NotFound(logger, id, TodoOperation.Complete.Name);
-                return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
+                return TodoResults.NotFound(logger, id, TodoOperation.Complete);
             case CompletionResult.Completed completed:
                 TodoLogs.CompleteSucceeded(logger, TodoOperation.Complete.Name, completed.Item.Id, completed.Item.Priority);
                 return TypedResults.Ok(TodoResponse.From(completed.Item));

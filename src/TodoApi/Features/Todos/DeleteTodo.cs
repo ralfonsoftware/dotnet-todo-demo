@@ -22,8 +22,7 @@ internal static class DeleteTodo
 
         if (deleted is null)
         {
-            TodoLogs.NotFound(logger, id, TodoOperation.Delete.Name);
-            return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
+            return TodoResults.NotFound(logger, id, TodoOperation.Delete);
         }
 
         TodoLogs.DeleteSucceeded(logger, TodoOperation.Delete.Name, deleted.Id, deleted.Priority);

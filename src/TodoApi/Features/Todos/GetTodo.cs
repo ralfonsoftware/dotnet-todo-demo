@@ -23,8 +23,7 @@ internal static class GetTodo
 
         if (item is null)
         {
-            TodoLogs.NotFound(logger, id, TodoOperation.Get.Name);
-            return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
+            return TodoResults.NotFound(logger, id, TodoOperation.Get);
         }
 
         TodoLogs.GetSucceeded(logger, TodoOperation.Get.Name, item.Id);
