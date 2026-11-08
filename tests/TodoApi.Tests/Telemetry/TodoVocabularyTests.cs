@@ -37,6 +37,8 @@ public sealed class TodoVocabularyTests
         TodoTelemetry.ActivitySourceName.ShouldBe("TodoApi.TodosStore");
         TodoTelemetry.MeterName.ShouldBe("TodoApi.Todos");
 
+        TodoTelemetry.Resource.DeploymentEnvironmentName.ShouldBe("deployment.environment.name");
+
         TodoTelemetry.Tags.Operation.ShouldBe("todo.operation");
         TodoTelemetry.Tags.Id.ShouldBe("todo.id");
         TodoTelemetry.Tags.Priority.ShouldBe("todo.priority");
@@ -55,11 +57,11 @@ public sealed class TodoVocabularyTests
         TodoTelemetry.Units.Seconds.ShouldBe("s");
 
         TodoTelemetry.Outcomes.Found.ShouldBe("found");
-        TodoTelemetry.Outcomes.NotFound.ShouldBe("not found");
+        TodoTelemetry.Outcomes.NotFound.ShouldBe("not_found");
         TodoTelemetry.Outcomes.Created.ShouldBe("created");
         TodoTelemetry.Outcomes.Updated.ShouldBe("updated");
         TodoTelemetry.Outcomes.Completed.ShouldBe("completed");
-        TodoTelemetry.Outcomes.AlreadyDone.ShouldBe("already done");
+        TodoTelemetry.Outcomes.AlreadyDone.ShouldBe("already_done");
         TodoTelemetry.Outcomes.Deleted.ShouldBe("deleted");
     }
 }

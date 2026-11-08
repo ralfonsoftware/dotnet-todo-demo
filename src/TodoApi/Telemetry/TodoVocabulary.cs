@@ -36,6 +36,13 @@ public static class TodoTelemetry
     /// <summary>The name of the meter that emits Todo Item lifecycle metrics.</summary>
     public const string MeterName = "TodoApi.Todos";
 
+    /// <summary>Resource attribute keys this service sets itself.</summary>
+    public static class Resource
+    {
+        /// <summary>The OpenTelemetry semantic-convention key for the deployment environment.</summary>
+        public const string DeploymentEnvironmentName = "deployment.environment.name";
+    }
+
     public static class Tags
     {
         public const string Operation = "todo.operation";
@@ -65,11 +72,11 @@ public static class TodoTelemetry
     public static class Outcomes
     {
         public const string Found = "found";
-        public const string NotFound = "not found";
+        public const string NotFound = "not_found";
         public const string Created = "created";
         public const string Updated = "updated";
         public const string Completed = "completed";
-        public const string AlreadyDone = "already done";
+        public const string AlreadyDone = "already_done";
         public const string Deleted = "deleted";
     }
 }

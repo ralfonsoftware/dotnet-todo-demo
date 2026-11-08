@@ -22,7 +22,7 @@ namespace TodoApi.Storage;
 /// Callers log only what the store cannot know: validation rejections.
 /// <para>
 /// <c>todo.items.completed</c> advances only for a real not-Done to Done
-/// transition; replaying a Completion is reported as <c>already done</c> and
+/// transition; replaying a Completion is reported as <c>already_done</c> and
 /// does not increment it.
 /// </para>
 /// </remarks>

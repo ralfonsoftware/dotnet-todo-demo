@@ -30,7 +30,7 @@ public static class TelemetryRegistration
                 .AddEnvironmentVariableDetector()
                 .AddAttributes(new Dictionary<string, object>
                 {
-                    ["deployment.environment"] = options.DeploymentEnvironment
+                    [TodoTelemetry.Resource.DeploymentEnvironmentName] = options.DeploymentEnvironment
                 })
                 .AddService(options.ServiceName, serviceVersion: options.ServiceVersion));
 

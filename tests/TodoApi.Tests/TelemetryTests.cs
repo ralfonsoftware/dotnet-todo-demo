@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
+using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -26,6 +27,19 @@ public sealed class TelemetryTests
         factory.Services.GetService<MeterProvider>().ShouldNotBeNull();
         factory.Services.GetServices<ILoggerProvider>()
             .ShouldContain(provider => provider is OpenTelemetryLoggerProvider);
+    }
+
+    [Fact]
+    public void Resource_CarriesTheDeploymentEnvironmentName()
+    {
+        using var factory = new TelemetryEnabledFactory();
+
+        var attributes = factory.Services.GetRequiredService<TracerProvider>()
+            .GetResource()
+            .Attributes
+            .ToDictionary(attribute => attribute.Key, attribute => attribute.Value);
+
+        attributes[TodoTelemetry.Resource.DeploymentEnvironmentName].ShouldBe("Testing");
     }
 
     [Fact]

@@ -72,7 +72,7 @@ Standard `OTEL_*` settings (environment variables by default) take precedence, t
 | Service name | `todo-api` | `OpenTelemetry:ServiceName`, `OTEL_SERVICE_NAME` |
 | Extra resource attributes | none | `OTEL_RESOURCE_ATTRIBUTES` |
 
-`service.version` comes from the assembly, and `deployment.environment` is the ASP.NET Core environment name. With `http/protobuf`, the default endpoint becomes `http://localhost:4318` when none is configured.
+`service.version` comes from the assembly, and the `deployment.environment.name` resource attribute is the ASP.NET Core environment name. With `http/protobuf`, the default endpoint becomes `http://localhost:4318` when none is configured.
 
 Tests run in the `Testing` environment, which disables both the pipeline and the exporter, so `dotnet test` needs no dashboard and makes no outbound telemetry attempts.
 
@@ -83,11 +83,11 @@ Every Todos Store operation emits one span from the `TodoApi.TodosStore` activit
 | Span | `todo.operation` | `todo.outcome` |
 | --- | --- | --- |
 | `todos.list` | `list` | `found` |
-| `todos.get` | `get` | `found`, `not found` |
+| `todos.get` | `get` | `found`, `not_found` |
 | `todos.create` | `create` | `created` |
-| `todos.update` | `update` | `updated`, `not found` |
-| `todos.complete` | `complete` | `completed`, `already done`, `not found` |
-| `todos.delete` | `delete` | `deleted`, `not found` |
+| `todos.update` | `update` | `updated`, `not_found` |
+| `todos.complete` | `complete` | `completed`, `already_done`, `not_found` |
+| `todos.delete` | `delete` | `deleted`, `not_found` |
 
 `todo.id` carries the Todo Item id when one is involved. `todo.priority` carries `low`, `medium`, or `high` when an item or priority is involved (`get`, `create`, `update`, `complete`, and `delete`); `list` has no single item, so it carries neither tag. Spans never carry the Todo Item title or description.
 
@@ -100,12 +100,12 @@ The `TodoApi.Todos` meter carries custom metrics for Todo Item lifecycle activit
 | `todo.items.created` | `Counter<long>` | `{item}` | `todo.priority` (`low`/`medium`/`high`) |
 | `todo.items.completed` | `Counter<long>` | `{item}` | none |
 | `todo.items.deleted` | `Counter<long>` | `{item}` | none |
-| `todo.store.failures` | `Counter<long>` | `{failure}` | `todo.operation`, `todo.outcome` (`not found`) |
+| `todo.store.failures` | `Counter<long>` | `{failure}` | `todo.operation`, `todo.outcome` (`not_found`) |
 | `todo.items.total` | `ObservableGauge<long>` | `{item}` | none |
 | `todo.items.done` | `ObservableGauge<long>` | `{item}` | none |
 | `todo.store.operation.duration` | `Histogram<double>` | `s` | `todo.operation` |
 
-The counters advance once per successful mutation: `todo.items.created` on Create (tagged with the Priority from the created item), `todo.items.completed` on Completion, and `todo.items.deleted` only when Delete removed an item. A Completion increments `todo.items.completed` only for a real not-Done to Done transition; replaying a Completion on a Done Todo Item is reported as `already done` on the span and does not double count. Failed operations (a not-found Get, Update, Complete, or Delete) increment `todo.store.failures` with `todo.operation` and `todo.outcome`.
+The counters advance once per successful mutation: `todo.items.created` on Create (tagged with the Priority from the created item), `todo.items.completed` on Completion, and `todo.items.deleted` only when Delete removed an item. A Completion increments `todo.items.completed` only for a real not-Done to Done transition; replaying a Completion on a Done Todo Item is reported as `already_done` on the span and does not double count. Failed operations (a not-found Get, Update, Complete, or Delete) increment `todo.store.failures` with `todo.operation` and `todo.outcome`.
 
 The gauges read the raw Todos Store on each collection, so they report the current total number of Todo Items and the current number of Done Todo Items without emitting an extra span or measurement. The duration histogram records every Todos Store operation in seconds (via `Stopwatch.GetElapsedTime`), tagged with `todo.operation`, including operations that end not found.
 
