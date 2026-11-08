@@ -71,7 +71,7 @@ public sealed class CompleteTodoTests : ApiTest
     public async Task Complete_WhenItemWasDeleted_Returns404()
     {
         var item = Seed();
-        Store.Delete(item.Id).ShouldBeTrue();
+        Store.Delete(item.Id).ShouldNotBeNull();
 
         using var response = await Client.PostAsync(
             $"/todos/{item.Id}/complete", content: null, TestContext.Current.CancellationToken);

@@ -17,18 +17,15 @@ internal static class DeleteTodo
         ITodoStore store,
         ILogger<TodoLogCategory> logger)
     {
-        // Read first so the successful deletion can carry the Priority; the
-        // store's Delete result still decides the response, so HTTP behaviour
-        // is unchanged even if another request removes the item concurrently.
-        var item = store.Get(id);
+        var deleted = store.Delete(id);
 
-        if (!store.Delete(id))
+        if (deleted is null)
         {
             TodoLogs.NotFound(logger, id, TodoOperations.Delete);
             return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
         }
 
-        TodoLogs.DeleteSucceeded(logger, TodoOperations.Delete, id, item!.Priority);
+        TodoLogs.DeleteSucceeded(logger, TodoOperations.Delete, deleted.Id, deleted.Priority);
         return TypedResults.NoContent();
     }
 }

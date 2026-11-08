@@ -14,5 +14,5 @@ public interface ITodoStore
 
     TodoItem? Complete(int id, DateTimeOffset completedAt);
 
-    bool Delete(int id);
+    TodoItem? Delete(int id);
 }

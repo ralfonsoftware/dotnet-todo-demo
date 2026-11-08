@@ -174,7 +174,7 @@ public sealed class TracingTodoStoreTests
         var store = new TracingTodoStore(inner);
         using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
 
-        store.Delete(item.Id).ShouldBeTrue();
+        store.Delete(item.Id).ShouldNotBeNull();
 
         var span = capture.Single(TracingTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.delete");
@@ -190,7 +190,7 @@ public sealed class TracingTodoStoreTests
         var store = new TracingTodoStore(new InMemoryTodoStore());
         using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
 
-        store.Delete(42).ShouldBeFalse();
+        store.Delete(42).ShouldBeNull();
 
         var span = capture.Single(TracingTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.delete");

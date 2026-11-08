@@ -95,15 +95,19 @@ public sealed class TracingTodoStore(InMemoryTodoStore inner) : ITodoStore
         return item;
     }
 
-    public bool Delete(int id)
+    public TodoItem? Delete(int id)
     {
         using var activity = Source.StartActivity("todos.delete", ActivityKind.Internal);
         activity?.SetTag(OperationTag, "delete");
         activity?.SetTag(IdTag, id);
 
-        LookUpWithPriority(activity, id);
         var deleted = inner.Delete(id);
-        activity?.SetTag(OutcomeTag, deleted ? "deleted" : "not found");
+        if (deleted is not null)
+        {
+            activity?.SetTag(PriorityTag, FormatPriority(deleted.Priority));
+        }
+
+        activity?.SetTag(OutcomeTag, deleted is not null ? "deleted" : "not found");
 
         return deleted;
     }

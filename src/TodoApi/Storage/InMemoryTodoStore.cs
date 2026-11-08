@@ -67,11 +67,11 @@ public sealed class InMemoryTodoStore : ITodoStore
         }
     }
 
-    public bool Delete(int id)
+    public TodoItem? Delete(int id)
     {
         lock (_gate)
         {
-            return _items.TryRemove(id, out _);
+            return _items.TryRemove(id, out var item) ? item : null;
         }
     }
 }
