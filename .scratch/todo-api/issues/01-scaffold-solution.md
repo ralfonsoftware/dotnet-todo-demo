@@ -1,6 +1,6 @@
 # 01 — Scaffold solution, app shell and test harness
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: —
 
 ## Goal
@@ -26,3 +26,7 @@ Create the solution, projects, and the application shell every slice plugs into.
 
 - xUnit v3 on Microsoft.Testing.Platform; Shouldly for assertions.
 - This ticket intentionally has no todo endpoints; the OpenAPI smoke test keeps the suite green.
+
+## Outcome
+
+`TodoApi.slnx` with `src/TodoApi` and `tests/TodoApi.Tests`; app shell serves `/openapi/v1.json` and `/scalar`; `TodoApiFactory` fixes the clock at `2026-11-08T11:16:00+00:00`; two smoke tests pass.
