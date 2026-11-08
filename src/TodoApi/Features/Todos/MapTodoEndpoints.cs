@@ -9,6 +9,7 @@ public static class TodoEndpoints
         CreateTodo.Map(app);
         UpdateTodo.Map(app);
         DeleteTodo.Map(app);
+        CompleteTodo.Map(app);
 
         return app;
     }

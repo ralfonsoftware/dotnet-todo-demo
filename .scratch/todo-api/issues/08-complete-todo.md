@@ -1,6 +1,6 @@
 # 08 — Complete todo
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 ## Scope
@@ -20,3 +20,7 @@ Blocked by: 02
 - Completing an open item sets both fields.
 - Repeating after time advances preserves the original timestamp.
 - Unknown id and non-numeric id → `404`.
+
+## Outcome
+
+`POST /todos/{id:int}/complete` stamps `completedAt` once and stays idempotent across later calls; missing, deleted, and non-numeric ids return `404`. Covered by 5 tests.
