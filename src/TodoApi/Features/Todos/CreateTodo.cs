@@ -38,11 +38,7 @@ internal static class CreateTodo
             return TypedResults.ValidationProblem(errors);
         }
 
-        var item = store.Create(
-            draft.Title,
-            draft.Description,
-            draft.Priority,
-            clock.GetUtcNow());
+        var item = store.Create(draft, clock.GetUtcNow());
 
         TodoLogs.CreateSucceeded(logger, TodoOperation.Create.Name, item.Id, item.Priority);
 

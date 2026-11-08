@@ -38,11 +38,7 @@ internal static class UpdateTodo
             return TypedResults.ValidationProblem(errors);
         }
 
-        var item = store.Update(
-            id,
-            draft.Title,
-            draft.Description,
-            draft.Priority);
+        var item = store.Update(id, draft);
 
         if (item is null)
         {

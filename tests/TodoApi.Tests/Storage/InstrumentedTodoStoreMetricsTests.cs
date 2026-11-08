@@ -14,9 +14,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
         using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
 
-        store.Create("Low item", null, Priority.Low, DateTimeOffset.UnixEpoch);
-        store.Create("Medium item", null, Priority.Medium, DateTimeOffset.UnixEpoch);
-        store.Create("High item", null, Priority.High, DateTimeOffset.UnixEpoch);
+        store.Create(Drafts.Of("Low item", null, Priority.Low), DateTimeOffset.UnixEpoch);
+        store.Create(Drafts.Of("Medium item", null, Priority.Medium), DateTimeOffset.UnixEpoch);
+        store.Create(Drafts.Of("High item", null, Priority.High), DateTimeOffset.UnixEpoch);
 
         var created = metrics.All(TodoTelemetry.Instruments.ItemsCreated);
         created.Count.ShouldBe(3);
@@ -35,7 +35,7 @@ public sealed class InstrumentedTodoStoreMetricsTests
     public void Delete_RecordsOneItemDeletedOnlyWhenAnItemWasRemoved()
     {
         var inner = new InMemoryTodoStore();
-        var item = inner.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         using var store = new InstrumentedTodoStore(inner);
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
 
@@ -52,7 +52,7 @@ public sealed class InstrumentedTodoStoreMetricsTests
     public void Complete_RecordsOneItemCompletedOnlyForARealTransition()
     {
         var inner = new InMemoryTodoStore();
-        var item = inner.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         using var store = new InstrumentedTodoStore(inner);
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
 
@@ -73,12 +73,12 @@ public sealed class InstrumentedTodoStoreMetricsTests
     public void FailedStoreOperations_AreCountedOnceWithOperationAndOutcome()
     {
         var inner = new InMemoryTodoStore();
-        var existing = inner.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        var existing = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         using var store = new InstrumentedTodoStore(inner);
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
 
         store.Get(42).ShouldBeNull();
-        store.Update(42, "New title", null, Priority.Low).ShouldBeNull();
+        store.Update(42, Drafts.Of("New title", null, Priority.Low)).ShouldBeNull();
         store.Complete(42, DateTimeOffset.UnixEpoch)
             .ShouldBeOfType<CompletionResult.NotFound>();
         store.Delete(42).ShouldBeNull();
@@ -86,9 +86,9 @@ public sealed class InstrumentedTodoStoreMetricsTests
         // Successful reads and mutations must not be counted as failures.
         store.GetAll();
         store.Get(existing.Id);
-        store.Update(existing.Id, "New title", null, Priority.Low);
+        store.Update(existing.Id, Drafts.Of("New title", null, Priority.Low));
         store.Complete(existing.Id, DateTimeOffset.UnixEpoch.AddHours(1));
-        store.Create("Another item", null, Priority.High, DateTimeOffset.UnixEpoch);
+        store.Create(Drafts.Of("Another item", null, Priority.High), DateTimeOffset.UnixEpoch);
         store.Delete(existing.Id);
 
         var failures = metrics.All(TodoTelemetry.Instruments.StoreFailures);
@@ -115,14 +115,14 @@ public sealed class InstrumentedTodoStoreMetricsTests
     public void EveryStoreOperation_RecordsADurationInSecondsWithTheOperationTag()
     {
         var inner = new InMemoryTodoStore();
-        var seeded = inner.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        var seeded = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         using var store = new InstrumentedTodoStore(inner);
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
 
         store.GetAll();
         store.Get(seeded.Id);
-        var created = store.Create("Buy oat milk", null, Priority.High, DateTimeOffset.UnixEpoch);
-        store.Update(created.Id, "Buy soy milk", null, Priority.Low);
+        var created = store.Create(Drafts.Of("Buy oat milk", null, Priority.High), DateTimeOffset.UnixEpoch);
+        store.Update(created.Id, Drafts.Of("Buy soy milk", null, Priority.Low));
         store.Complete(created.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         store.Delete(created.Id);
         store.Get(42);
@@ -157,7 +157,7 @@ public sealed class InstrumentedTodoStoreMetricsTests
     public async Task ConcurrentCompletions_RecordOneItemCompleted()
     {
         var inner = new InMemoryTodoStore();
-        var item = inner.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         using var store = new InstrumentedTodoStore(inner);
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
 
@@ -177,8 +177,8 @@ public sealed class InstrumentedTodoStoreMetricsTests
     public void Gauges_ReportTheCurrentTotalAndDoneCounts()
     {
         var inner = new InMemoryTodoStore();
-        var open = inner.Create("Buy milk", null, Priority.Low, DateTimeOffset.UnixEpoch);
-        var done = inner.Create("Ship the demo", null, Priority.High, DateTimeOffset.UnixEpoch);
+        var open = inner.Create(Drafts.Of("Buy milk", null, Priority.Low), DateTimeOffset.UnixEpoch);
+        var done = inner.Create(Drafts.Of("Ship the demo", null, Priority.High), DateTimeOffset.UnixEpoch);
         inner.Complete(done.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         using var store = new InstrumentedTodoStore(inner);
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
@@ -193,7 +193,7 @@ public sealed class InstrumentedTodoStoreMetricsTests
         doneCount.Value.ShouldBe(1L);
         doneCount.Unit.ShouldBe(TodoTelemetry.Units.Items);
 
-        store.Create("Buy oat milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        store.Create(Drafts.Of("Buy oat milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         store.Complete(open.Id, DateTimeOffset.UnixEpoch.AddHours(2));
         store.Delete(done.Id);
 

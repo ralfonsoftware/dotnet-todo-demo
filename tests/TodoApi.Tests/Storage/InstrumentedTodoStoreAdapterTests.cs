@@ -22,10 +22,10 @@ public sealed class InstrumentedTodoStoreAdapterTests
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
 
-        var item = store.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        var item = store.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         store.GetAll();
         store.Get(item.Id);
-        store.Update(item.Id, "Buy oat milk", null, Priority.High);
+        store.Update(item.Id, Drafts.Of("Buy oat milk", null, Priority.High));
         store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         store.Delete(item.Id);
 
@@ -63,8 +63,8 @@ public sealed class InstrumentedTodoStoreAdapterTests
     public void Gauges_ReadThroughTheStoreInterfaceOverAnyAdapter()
     {
         var adapter = new RecordingTodoStore();
-        var open = adapter.Create("Buy milk", null, Priority.Low, DateTimeOffset.UnixEpoch);
-        var done = adapter.Create("Ship the demo", null, Priority.High, DateTimeOffset.UnixEpoch);
+        var open = adapter.Create(Drafts.Of("Buy milk", null, Priority.Low), DateTimeOffset.UnixEpoch);
+        var done = adapter.Create(Drafts.Of("Ship the demo", null, Priority.High), DateTimeOffset.UnixEpoch);
         adapter.Complete(done.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         using var store = new InstrumentedTodoStore(adapter);
         using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);

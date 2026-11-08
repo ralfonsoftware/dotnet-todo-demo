@@ -196,7 +196,7 @@ public sealed class BoardMutationLogTests : IDisposable
     private TodoItem Seed(
         string title = "Seeded todo",
         Priority priority = Priority.Medium) =>
-        _store.Create(title, null, priority, TodoApiFactory.StartTime);
+        _store.Create(Drafts.Of(title, priority: priority), TodoApiFactory.StartTime);
 
     private CapturedLogRecord SingleLog(int eventId, string operation) =>
         _factory.Logs.Records

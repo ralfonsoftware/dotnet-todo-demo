@@ -14,7 +14,7 @@ internal sealed class BoardMutations(ITodoStore store, ILogger logger)
 {
     public TodoItem Create(TodoDraft draft, DateTimeOffset now)
     {
-        var item = store.Create(draft.Title, draft.Description, draft.Priority, now);
+        var item = store.Create(draft, now);
         TodoLogs.CreateSucceeded(logger, TodoOperation.Create.Name, item.Id, item.Priority);
 
         return item;
@@ -22,7 +22,7 @@ internal sealed class BoardMutations(ITodoStore store, ILogger logger)
 
     public TodoItem? Update(int id, TodoDraft draft)
     {
-        var item = store.Update(id, draft.Title, draft.Description, draft.Priority);
+        var item = store.Update(id, draft);
 
         if (item is null)
         {

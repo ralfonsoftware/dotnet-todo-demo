@@ -15,23 +15,23 @@ public sealed class InMemoryTodoStore : ITodoStore
     public TodoItem? Get(int id) =>
         _items.TryGetValue(id, out var item) ? item : null;
 
-    public TodoItem Create(string title, string? description, Priority priority, DateTimeOffset createdAt)
+    public TodoItem Create(TodoDraft draft, DateTimeOffset createdAt)
     {
         var id = Interlocked.Increment(ref _lastId);
         var item = new TodoItem
         {
             Id = id,
-            Title = title,
-            Description = description,
+            Title = draft.Title,
+            Description = draft.Description,
             CreatedAt = createdAt,
-            Priority = priority
+            Priority = draft.Priority
         };
 
         _items[id] = item;
         return item;
     }
 
-    public TodoItem? Update(int id, string title, string? description, Priority priority)
+    public TodoItem? Update(int id, TodoDraft draft)
     {
         lock (_gate)
         {
@@ -42,9 +42,9 @@ public sealed class InMemoryTodoStore : ITodoStore
 
             var updated = existing with
             {
-                Title = title,
-                Description = description,
-                Priority = priority
+                Title = draft.Title,
+                Description = draft.Description,
+                Priority = draft.Priority
             };
 
             _items[id] = updated;

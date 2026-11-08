@@ -21,18 +21,20 @@ public interface ITodoStore
     TodoItem? Get(int id);
 
     /// <summary>
-    /// Stores a new Todo Item under the next id — starting at 1, increasing by
-    /// one, and never reused after Delete — and returns it. The supplied
-    /// creation time is stored unchanged.
+    /// Stores a new Todo Item built from the validated <paramref name="draft"/>
+    /// under the next id — starting at 1, increasing by one, and never reused
+    /// after Delete — and returns it. The supplied creation time is stored
+    /// unchanged.
     /// </summary>
-    TodoItem Create(string title, string? description, Priority priority, DateTimeOffset createdAt);
+    TodoItem Create(TodoDraft draft, DateTimeOffset createdAt);
 
     /// <summary>
     /// Replaces the title, description, and priority of the Todo Item with the
-    /// given id while preserving its id, creation time, and completion state.
-    /// Returns null when it does not exist.
+    /// given id with those of the validated <paramref name="draft"/>, while
+    /// preserving its id, creation time, and completion state. Returns null
+    /// when it does not exist.
     /// </summary>
-    TodoItem? Update(int id, string title, string? description, Priority priority);
+    TodoItem? Update(int id, TodoDraft draft);
 
     /// <summary>
     /// Applies Completion to the Todo Item with the given id. Completion is

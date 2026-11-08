@@ -19,7 +19,7 @@ public sealed class InMemoryTodoStoreTests
     public void Complete_WhenItemIsOpen_ReturnsCompletedWithDoneAndTheSuppliedTimestamp()
     {
         var store = new InMemoryTodoStore();
-        var item = store.Create("Buy milk", null, Priority.High, DateTimeOffset.UnixEpoch);
+        var item = store.Create(Drafts.Of("Buy milk", null, Priority.High), DateTimeOffset.UnixEpoch);
 
         var result = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1))
             .ShouldBeOfType<CompletionResult.Completed>();
@@ -33,7 +33,7 @@ public sealed class InMemoryTodoStoreTests
     public void Complete_WhenItemIsAlreadyDone_ReturnsAlreadyDoneAndKeepsTheOriginalTimestamp()
     {
         var store = new InMemoryTodoStore();
-        var item = store.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        var item = store.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1))
             .ShouldBeOfType<CompletionResult.Completed>();
 

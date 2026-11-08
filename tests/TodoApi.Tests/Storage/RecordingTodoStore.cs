@@ -29,16 +29,16 @@ internal sealed class RecordingTodoStore : ITodoStore
         return _inner.Get(id);
     }
 
-    public TodoItem Create(string title, string? description, Priority priority, DateTimeOffset createdAt)
+    public TodoItem Create(TodoDraft draft, DateTimeOffset createdAt)
     {
         _calls.Enqueue(TodoOperation.Create.Name);
-        return _inner.Create(title, description, priority, createdAt);
+        return _inner.Create(draft, createdAt);
     }
 
-    public TodoItem? Update(int id, string title, string? description, Priority priority)
+    public TodoItem? Update(int id, TodoDraft draft)
     {
         _calls.Enqueue(TodoOperation.Update.Name);
-        return _inner.Update(id, title, description, priority);
+        return _inner.Update(id, draft);
     }
 
     public CompletionResult Complete(int id, DateTimeOffset completedAt)

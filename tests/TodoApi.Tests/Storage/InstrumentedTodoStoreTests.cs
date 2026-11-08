@@ -28,7 +28,7 @@ public sealed class InstrumentedTodoStoreTests
     public void Get_WhenItemExists_EmitsASingleFoundSpan()
     {
         var inner = new InMemoryTodoStore();
-        var item = inner.Create("Buy milk", "Semi-skimmed", Priority.High, DateTimeOffset.UnixEpoch);
+        var item = inner.Create(Drafts.Of("Buy milk", "Semi-skimmed", Priority.High), DateTimeOffset.UnixEpoch);
         using var store = new InstrumentedTodoStore(inner);
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
@@ -65,7 +65,7 @@ public sealed class InstrumentedTodoStoreTests
         using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
-        var created = store.Create("Buy milk", "Semi-skimmed", Priority.Low, DateTimeOffset.UnixEpoch);
+        var created = store.Create(Drafts.Of("Buy milk", "Semi-skimmed", Priority.Low), DateTimeOffset.UnixEpoch);
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe(TodoOperation.Create.SpanName);
@@ -79,11 +79,11 @@ public sealed class InstrumentedTodoStoreTests
     public void Update_WhenItemExists_EmitsASingleUpdatedSpan()
     {
         var inner = new InMemoryTodoStore();
-        var item = inner.Create("Old title", "Old description", Priority.Low, DateTimeOffset.UnixEpoch);
+        var item = inner.Create(Drafts.Of("Old title", "Old description", Priority.Low), DateTimeOffset.UnixEpoch);
         using var store = new InstrumentedTodoStore(inner);
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
-        var updated = store.Update(item.Id, "New title", "New description", Priority.High);
+        var updated = store.Update(item.Id, Drafts.Of("New title", "New description", Priority.High));
 
         updated.ShouldNotBeNull();
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
@@ -100,7 +100,7 @@ public sealed class InstrumentedTodoStoreTests
         using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
-        store.Update(42, "New title", null, Priority.Medium).ShouldBeNull();
+        store.Update(42, Drafts.Of("New title", null, Priority.Medium)).ShouldBeNull();
 
         var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe(TodoOperation.Update.SpanName);
@@ -114,7 +114,7 @@ public sealed class InstrumentedTodoStoreTests
     public void Complete_WhenItemIsOpen_EmitsASingleCompletedSpanWithPreCompletionPriority()
     {
         var inner = new InMemoryTodoStore();
-        var item = inner.Create("Buy milk", null, Priority.High, DateTimeOffset.UnixEpoch);
+        var item = inner.Create(Drafts.Of("Buy milk", null, Priority.High), DateTimeOffset.UnixEpoch);
         using var store = new InstrumentedTodoStore(inner);
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
@@ -134,7 +134,7 @@ public sealed class InstrumentedTodoStoreTests
     public void Complete_WhenItemIsAlreadyDone_EmitsASingleAlreadyDoneSpan()
     {
         var inner = new InMemoryTodoStore();
-        var item = inner.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         inner.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         using var store = new InstrumentedTodoStore(inner);
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
@@ -172,7 +172,7 @@ public sealed class InstrumentedTodoStoreTests
     public void Delete_WhenItemExists_EmitsASingleDeletedSpanWithPriority()
     {
         var inner = new InMemoryTodoStore();
-        var item = inner.Create("Buy milk", null, Priority.Low, DateTimeOffset.UnixEpoch);
+        var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Low), DateTimeOffset.UnixEpoch);
         using var store = new InstrumentedTodoStore(inner);
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
@@ -209,10 +209,10 @@ public sealed class InstrumentedTodoStoreTests
         using var store = new InstrumentedTodoStore(inner);
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
-        var item = store.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        var item = store.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         store.GetAll();
         store.Get(item.Id);
-        store.Update(item.Id, "Buy oat milk", null, Priority.High);
+        store.Update(item.Id, Drafts.Of("Buy oat milk", null, Priority.High));
         store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         store.Delete(item.Id);
 
@@ -244,10 +244,10 @@ public sealed class InstrumentedTodoStoreTests
         using var store = new InstrumentedTodoStore(inner);
         using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
-        var item = store.Create(title, description, Priority.High, DateTimeOffset.UnixEpoch);
+        var item = store.Create(Drafts.Of(title, description, Priority.High), DateTimeOffset.UnixEpoch);
         store.GetAll();
         store.Get(item.Id);
-        store.Update(item.Id, title, description, Priority.Low);
+        store.Update(item.Id, Drafts.Of(title, description, Priority.Low));
         store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         store.Delete(item.Id);
 

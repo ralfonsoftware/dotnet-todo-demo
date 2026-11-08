@@ -109,14 +109,14 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
         return item;
     }
 
-    public TodoItem Create(string title, string? description, Priority priority, DateTimeOffset createdAt)
+    public TodoItem Create(TodoDraft draft, DateTimeOffset createdAt)
     {
         using var timing = new OperationTiming(_operationDuration, TodoOperation.Create);
         using var activity = Source.StartActivity(TodoOperation.Create.SpanName, ActivityKind.Internal);
         activity?.SetTag(TodoTelemetry.Tags.Operation, TodoOperation.Create.Name);
-        activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(priority));
+        activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(draft.Priority));
 
-        var item = _inner.Create(title, description, priority, createdAt);
+        var item = _inner.Create(draft, createdAt);
         _createdItems.Add(1, new KeyValuePair<string, object?>(
             TodoTelemetry.Tags.Priority, FormatPriority(item.Priority)));
         activity?.SetTag(TodoTelemetry.Tags.Id, item.Id);
@@ -125,15 +125,15 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
         return item;
     }
 
-    public TodoItem? Update(int id, string title, string? description, Priority priority)
+    public TodoItem? Update(int id, TodoDraft draft)
     {
         using var timing = new OperationTiming(_operationDuration, TodoOperation.Update);
         using var activity = Source.StartActivity(TodoOperation.Update.SpanName, ActivityKind.Internal);
         activity?.SetTag(TodoTelemetry.Tags.Operation, TodoOperation.Update.Name);
         activity?.SetTag(TodoTelemetry.Tags.Id, id);
-        activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(priority));
+        activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(draft.Priority));
 
-        var item = _inner.Update(id, title, description, priority);
+        var item = _inner.Update(id, draft);
         var outcome = item is null ? TodoTelemetry.Outcomes.NotFound : TodoTelemetry.Outcomes.Updated;
         activity?.SetTag(TodoTelemetry.Tags.Outcome, outcome);
 
