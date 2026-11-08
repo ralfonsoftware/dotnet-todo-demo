@@ -1,6 +1,6 @@
 # 05 — Create todo
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 ## Scope
@@ -24,3 +24,7 @@ Blocked by: 02
 - Over-long description → `400`.
 - Unknown member, `done`, malformed JSON, and integer priority → `400`.
 - Wrong content type → `415`.
+
+## Outcome
+
+`POST /todos` validates and normalises input, rejects unmapped members and non-string enum values, applies the `medium` default, stamps `createdAt` from `TimeProvider`, and returns `201` with `Location`. Covered by 12 tests.

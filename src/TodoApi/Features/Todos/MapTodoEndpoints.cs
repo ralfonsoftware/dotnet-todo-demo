@@ -6,6 +6,7 @@ public static class TodoEndpoints
     {
         ListTodos.Map(app);
         GetTodo.Map(app);
+        CreateTodo.Map(app);
 
         return app;
     }
