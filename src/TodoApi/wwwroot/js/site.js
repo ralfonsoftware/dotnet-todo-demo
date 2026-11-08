@@ -1,8 +1,15 @@
 (() => {
     'use strict';
 
+    const hooks = {
+        confirm: 'data-confirm',
+        themeToggle: '[data-theme-toggle]',
+        themeKey: 'todo-theme',
+        newTitleId: 'NewTitle'
+    };
+
     const root = document.documentElement;
-    const toggle = document.querySelector('[data-theme-toggle]');
+    const toggle = document.querySelector(hooks.themeToggle);
 
     const syncToggle = () => {
         if (!toggle) {
@@ -21,7 +28,7 @@
         root.dataset.theme = next;
 
         try {
-            localStorage.setItem('todo-theme', next);
+            localStorage.setItem(hooks.themeKey, next);
         } catch {
             /* Storage can be unavailable in private contexts. */
         }
@@ -36,7 +43,7 @@
             return;
         }
 
-        const message = form.dataset.confirm;
+        const message = form.getAttribute(hooks.confirm);
         if (message && !window.confirm(message)) {
             event.preventDefault();
         }
@@ -56,7 +63,7 @@
             return;
         }
 
-        const input = document.getElementById('NewTitle');
+        const input = document.getElementById(hooks.newTitleId);
         if (!input) {
             return;
         }

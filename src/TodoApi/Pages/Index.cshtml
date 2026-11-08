@@ -34,8 +34,8 @@
         <div class="composer-row">
             <div class="composer-field">
                 <label class="sr-only" asp-for="NewTitle">Todo title</label>
-                <input asp-for="NewTitle" class="composer-input" placeholder="What needs doing?"
-                       autocomplete="off" maxlength="200" required />
+                <input asp-for="NewTitle" id="@PresentationHooks.NewTitleId" class="composer-input"
+                       placeholder="What needs doing?" autocomplete="off" maxlength="200" required />
             </div>
             <button class="btn btn-primary" type="submit">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -51,18 +51,15 @@
         <div class="composer-meta">
             <fieldset class="priority-picker">
                 <legend class="sr-only">Priority</legend>
-                <label class="prio-option prio--low">
-                    <input asp-for="NewPriority" id="new-priority-low" type="radio" value="Low" />
-                    <span>Low</span>
-                </label>
-                <label class="prio-option prio--medium">
-                    <input asp-for="NewPriority" id="new-priority-medium" type="radio" value="Medium" />
-                    <span>Medium</span>
-                </label>
-                <label class="prio-option prio--high">
-                    <input asp-for="NewPriority" id="new-priority-high" type="radio" value="High" />
-                    <span>High</span>
-                </label>
+                @foreach (var priority in Enum.GetValues<Priority>())
+                {
+                    var slug = PresentationHooks.PriorityModifier(priority);
+
+                    <label class="@PresentationHooks.PriorityOptionClass(priority)">
+                        <input asp-for="NewPriority" id="new-priority-@slug" type="radio" value="@priority" />
+                        <span>@priority</span>
+                    </label>
+                }
             </fieldset>
 
             <details class="notes" open="@(Model.DescriptionHasError ? "open" : null)">
@@ -160,24 +157,17 @@
                                     <p class="field-label" id="edit-priority-label-@item.Id">Priority</p>
                                     <div class="priority-picker" role="radiogroup"
                                          aria-labelledby="edit-priority-label-@item.Id">
-                                        <label class="prio-option prio--low">
-                                            <input type="radio" name="editPriority" value="Low"
-                                                   id="edit-priority-low-@item.Id"
-                                                   checked="@(Model.EditPriority == Priority.Low)" />
-                                            <span>Low</span>
-                                        </label>
-                                        <label class="prio-option prio--medium">
-                                            <input type="radio" name="editPriority" value="Medium"
-                                                   id="edit-priority-medium-@item.Id"
-                                                   checked="@(Model.EditPriority == Priority.Medium)" />
-                                            <span>Medium</span>
-                                        </label>
-                                        <label class="prio-option prio--high">
-                                            <input type="radio" name="editPriority" value="High"
-                                                   id="edit-priority-high-@item.Id"
-                                                   checked="@(Model.EditPriority == Priority.High)" />
-                                            <span>High</span>
-                                        </label>
+                                        @foreach (var priority in Enum.GetValues<Priority>())
+                                        {
+                                            var slug = PresentationHooks.PriorityModifier(priority);
+
+                                            <label class="@PresentationHooks.PriorityOptionClass(priority)">
+                                                <input type="radio" name="editPriority" value="@priority"
+                                                       id="edit-priority-@slug-@item.Id"
+                                                       checked="@(Model.EditPriority == priority)" />
+                                                <span>@priority</span>
+                                            </label>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -236,7 +226,7 @@
                                 }
 
                                 <div class="todo-meta">
-                                    <span class="badge badge--@item.Priority.ToString().ToLowerInvariant()">
+                                    <span class="@PresentationHooks.BadgeClass(item.Priority)">
                                         @item.Priority
                                     </span>
                                     <span class="meta-dot" aria-hidden="true"></span>
