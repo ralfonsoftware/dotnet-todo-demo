@@ -55,6 +55,7 @@ public sealed class TodoPageTests : ApiTest
         {
             ["NewTitle"] = "  Buy milk  ",
             ["NewDescription"] = "  Semi-skimmed  ",
+            ["NewDueDate"] = "2026-11-12",
             ["new-priority-high"] = "High"
         });
 
@@ -65,6 +66,7 @@ public sealed class TodoPageTests : ApiTest
         item.Title.ShouldBe("Buy milk");
         item.Description.ShouldBe("Semi-skimmed");
         item.Priority.ShouldBe(Priority.High);
+        item.DueDate.ShouldBe(new DateOnly(2026, 11, 12));
         item.CreatedAt.ShouldBe(Now);
         html.ShouldContain("Buy milk");
     }
@@ -177,6 +179,20 @@ public sealed class TodoPageTests : ApiTest
     }
 
     [Fact]
+    public async Task Create_WithMalformedDueDate_ShowsValidationPageAndStoresNothing()
+    {
+        var response = await PostFormAsync("Create", new()
+        {
+            ["NewTitle"] = "Never saved",
+            ["NewDueDate"] = "2026-13-01",
+            ["new-priority-medium"] = "Medium"
+        });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        Store.GetAll().ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task Complete_MarksTodoDoneWithCompletionTime()
     {
         var item = Seed("Walk the dog");
@@ -243,6 +259,54 @@ public sealed class TodoPageTests : ApiTest
         await FollowRedirectAsync(response);
 
         Store.Get(item.Id).ShouldNotBeNull().Priority.ShouldBe(Priority.Medium);
+    }
+
+    [Fact]
+    public async Task Update_SetsAndClearsDueDate()
+    {
+        var item = Seed("Plan the week");
+        var dueDate = new DateOnly(2026, 11, 12);
+
+        var set = await PostFormAsync("Update", new()
+        {
+            [$"edit-title-{item.Id}"] = "Plan the week",
+            [$"edit-due-{item.Id}"] = "2026-11-12",
+            [$"edit-priority-medium-{item.Id}"] = "Medium"
+        }, id: item.Id);
+
+        AssertRedirectTo(set, "open");
+        await FollowRedirectAsync(set);
+        Store.Get(item.Id).ShouldNotBeNull().DueDate.ShouldBe(dueDate);
+
+        var cleared = await PostFormAsync("Update", new()
+        {
+            [$"edit-title-{item.Id}"] = "Plan the week",
+            [$"edit-due-{item.Id}"] = "",
+            [$"edit-priority-medium-{item.Id}"] = "Medium"
+        }, id: item.Id);
+
+        AssertRedirectTo(cleared, "open");
+        await FollowRedirectAsync(cleared);
+        Store.Get(item.Id).ShouldNotBeNull().DueDate.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Update_WithMalformedDueDate_KeepsEditorOpenAndReportsIt()
+    {
+        var item = Seed("Keep me", dueDate: new DateOnly(2026, 11, 12));
+
+        var response = await PostFormAsync("Update", new()
+        {
+            [$"edit-title-{item.Id}"] = "Keep me",
+            [$"edit-due-{item.Id}"] = "2026-13-01",
+            [$"edit-priority-medium-{item.Id}"] = "Medium"
+        }, id: item.Id);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        html.ShouldContain("Choose a valid due date.");
+        html.ShouldContain($"id=\"edit-title-{item.Id}\"");
+        Store.Get(item.Id).ShouldNotBeNull().DueDate.ShouldBe(new DateOnly(2026, 11, 12));
     }
 
     [Fact]
@@ -336,13 +400,19 @@ public sealed class TodoPageTests : ApiTest
     [Fact]
     public async Task EditDeepLink_RendersEditorWithCurrentValues()
     {
-        var item = Seed("Editable todo", description: "Some note", priority: Priority.High);
+        var item = Seed(
+            "Editable todo",
+            description: "Some note",
+            priority: Priority.High,
+            dueDate: new DateOnly(2026, 11, 12));
 
         var html = await GetHtmlAsync($"/?edit={item.Id}");
 
         ControlName(html, $"edit-title-{item.Id}").ShouldBe("editTitle");
         ControlName(html, $"edit-note-{item.Id}").ShouldBe("editDescription");
         ControlName(html, $"edit-priority-high-{item.Id}").ShouldBe("editPriority");
+        ControlName(html, $"edit-due-{item.Id}").ShouldBe("editDueDate");
+        ControlAttribute(html, $"edit-due-{item.Id}", "value").ShouldBe("2026-11-12");
         html.ShouldContain("value=\"Editable todo\"");
     }
 
@@ -472,6 +542,32 @@ public sealed class TodoPageTests : ApiTest
             .ShouldBeTrue("The Done date should be local.");
         html.ShouldNotContain("8 Nov");
         open.CreatedAt.ShouldBe(Now);
+    }
+
+    [Fact]
+    public async Task Home_OpenPastDueItem_ShowsDueDateAndOverdueClass()
+    {
+        Seed("Send the report", dueDate: new DateOnly(2000, 1, 1));
+
+        var html = await GetHtmlAsync("/");
+
+        Regex.IsMatch(html, @"Due\s*<time datetime=""2000-01-01"">\s*1 Jan\s*</time>")
+            .ShouldBeTrue("An open item should show its due date.");
+        Regex.IsMatch(html, @"class=""meta-text meta-due is-overdue""")
+            .ShouldBeTrue("An open item past its due date should read as overdue.");
+    }
+
+    [Fact]
+    public async Task Home_DonePastDueItem_ShowsDueDateWithoutOverdueClass()
+    {
+        var item = Seed("Filed the report", dueDate: new DateOnly(2000, 1, 1));
+        Store.Complete(item.Id, Now);
+
+        var html = await GetHtmlAsync("/?view=done");
+
+        Regex.IsMatch(html, @"Due\s*<time datetime=""2000-01-01"">\s*1 Jan\s*</time>")
+            .ShouldBeTrue("A done item should still show its due date.");
+        html.ShouldNotContain("is-overdue");
     }
 
     [Fact]

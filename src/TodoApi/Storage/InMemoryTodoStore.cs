@@ -24,7 +24,8 @@ public sealed class InMemoryTodoStore : ITodoStore
             Title = draft.Title,
             Description = draft.Description,
             CreatedAt = createdAt,
-            Priority = draft.Priority
+            Priority = draft.Priority,
+            DueDate = draft.DueDate
         };
 
         _items[id] = item;
@@ -44,7 +45,8 @@ public sealed class InMemoryTodoStore : ITodoStore
             {
                 Title = draft.Title,
                 Description = draft.Description,
-                Priority = draft.Priority
+                Priority = draft.Priority,
+                DueDate = draft.DueDate
             };
 
             _items[id] = updated;

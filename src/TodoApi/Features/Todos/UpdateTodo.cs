@@ -9,7 +9,11 @@ using TodoApi.Telemetry;
 namespace TodoApi.Features.Todos;
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record UpdateTodoRequest(string? Title, string? Description, Priority? Priority);
+public sealed record UpdateTodoRequest(
+    string? Title,
+    string? Description,
+    Priority? Priority,
+    DateOnly? DueDate);
 
 internal static class UpdateTodo
 {
@@ -31,6 +35,7 @@ internal static class UpdateTodo
                 request.Title,
                 request.Description,
                 request.Priority,
+                request.DueDate,
                 out var draft,
                 out var errors))
         {

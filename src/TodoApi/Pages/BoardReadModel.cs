@@ -67,7 +67,7 @@ public sealed record BoardReadModel(
 
         var edit = editId is { } id
             ? all.FirstOrDefault(item => item.Id == id) is { } item
-                ? new TodoEditState(item.Title, item.Description ?? string.Empty, item.Priority)
+                ? new TodoEditState(item.Title, item.Description ?? string.Empty, item.Priority, item.DueDate)
                 : null
             : null;
 

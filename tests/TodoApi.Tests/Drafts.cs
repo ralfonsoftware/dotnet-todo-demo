@@ -11,9 +11,10 @@ internal static class Drafts
     public static TodoDraft Of(
         string title = "Seeded todo",
         string? description = null,
-        Priority priority = TodoDraft.DefaultPriority)
+        Priority priority = TodoDraft.DefaultPriority,
+        DateOnly? dueDate = null)
     {
-        if (!TodoDraft.TryCreate(title, description, priority, out var draft, out var errors))
+        if (!TodoDraft.TryCreate(title, description, priority, dueDate, out var draft, out var errors))
         {
             throw new ArgumentException(
                 $"Invalid Todo Draft: {string.Join(" ", errors.SelectMany(error => error.Value))}");

@@ -20,7 +20,7 @@ public sealed class ListTodosTests : ApiTest
     [Fact]
     public async Task GetAll_ReturnsItemsSortedByIdWithWireShape()
     {
-        Seed("First", description: "One", priority: Priority.Low);
+        Seed("First", description: "One", priority: Priority.Low, dueDate: new DateOnly(2026, 11, 12));
         Seed("Second");
         Seed("Third", priority: Priority.High);
 
@@ -41,5 +41,7 @@ public sealed class ListTodosTests : ApiTest
         first.GetProperty("done").GetBoolean().ShouldBeFalse();
         first.GetProperty("completedAt").ValueKind.ShouldBe(JsonValueKind.Null);
         first.GetProperty("createdAt").GetString().ShouldBe("2026-11-08T11:16:00+00:00");
+        first.GetProperty("dueDate").GetString().ShouldBe("2026-11-12");
+        items[1].GetProperty("dueDate").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 }

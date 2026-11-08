@@ -3,9 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 namespace TodoApi.Domain;
 
 /// <summary>
-/// The title, optional description, and priority supplied when creating or
-/// editing a Todo Item, normalised and validated before it reaches the Todos
-/// Store.
+/// The title, optional description, priority, and optional due date supplied
+/// when creating or editing a Todo Item, normalised and validated before it
+/// reaches the Todos Store.
 /// </summary>
 public sealed record TodoDraft
 {
@@ -19,10 +19,13 @@ public sealed record TodoDraft
 
     public Priority Priority { get; init; } = DefaultPriority;
 
+    public DateOnly? DueDate { get; init; }
+
     public static bool TryCreate(
         string? title,
         string? description,
         Priority? priority,
+        DateOnly? dueDate,
         [NotNullWhen(true)] out TodoDraft? draft,
         out Dictionary<string, string[]> errors)
     {
@@ -56,7 +59,8 @@ public sealed record TodoDraft
         {
             Title = normalizedTitle!,
             Description = normalizedDescription,
-            Priority = priority ?? DefaultPriority
+            Priority = priority ?? DefaultPriority,
+            DueDate = dueDate
         };
 
         return true;

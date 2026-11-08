@@ -12,12 +12,12 @@ public sealed class UpdateTodoTests : ApiTest
     [Fact]
     public async Task Update_ReplacesEditableFieldsAndKeepsCreatedAt()
     {
-        var item = Seed("Old title", "Old description", Priority.Low);
+        var item = Seed("Old title", "Old description", Priority.Low, new DateOnly(2026, 11, 10));
 
         using var response = await SendJsonAsync(
             HttpMethod.Put,
             $"/todos/{item.Id}",
-            """{"title":"  New title  ","description":"  New description  ","priority":"high"}""");
+            """{"title":"  New title  ","description":"  New description  ","priority":"high","dueDate":"2026-11-12"}""");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -32,12 +32,13 @@ public sealed class UpdateTodoTests : ApiTest
         body.CreatedAt.ShouldBe(item.CreatedAt);
         body.Done.ShouldBeFalse();
         body.CompletedAt.ShouldBeNull();
+        body.DueDate.ShouldBe(new DateOnly(2026, 11, 12));
     }
 
     [Fact]
     public async Task Update_WithoutDescriptionAndPriority_ResetsBoth()
     {
-        var item = Seed("Old title", "Old description", Priority.High);
+        var item = Seed("Old title", "Old description", Priority.High, new DateOnly(2026, 11, 12));
 
         using var response = await SendJsonAsync(
             HttpMethod.Put,
@@ -52,6 +53,28 @@ public sealed class UpdateTodoTests : ApiTest
         body.ShouldNotBeNull();
         body.Description.ShouldBeNull();
         body.Priority.ShouldBe(Priority.Medium);
+        body.DueDate.ShouldBeNull();
+        Store.Get(item.Id).ShouldNotBeNull().DueDate.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Update_SetsDueDateWhenTheItemHasNone()
+    {
+        var item = Seed("Plan the week");
+        var dueDate = new DateOnly(2026, 12, 1);
+
+        using var response = await SendJsonAsync(
+            HttpMethod.Put,
+            $"/todos/{item.Id}",
+            """{"title":"Plan the week","dueDate":"2026-12-01"}""");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<TodoResponse>(
+            ApiJson.Options, TestContext.Current.CancellationToken);
+
+        body.ShouldNotBeNull().DueDate.ShouldBe(dueDate);
+        Store.Get(item.Id).ShouldNotBeNull().DueDate.ShouldBe(dueDate);
     }
 
     [Fact]

@@ -22,9 +22,10 @@ dotnet run --project src/TodoApi
 
 The server-rendered frontend is a personal, light/dark todo board built with Razor Pages. It talks to `ITodoStore` directly, in the same process as the API, rather than making HTTP calls to itself.
 
-- Add a todo with an optional note and a Low/Medium/High Priority.
+- Add a todo with an optional note, a Due Date, and a Low/Medium/High Priority.
 - Filter by Open, Done, or All; Open items sort by Priority, done items by completion time.
-- Mark items done, edit them inline, or delete with confirmation.
+- Mark items done, edit them inline (including adding, changing, or clearing the Due Date), or delete with confirmation.
+- Open items past their Due Date read as overdue.
 - Progress ring, live counts, completion toasts, and a keyboard shortcut (`N`) that focuses the composer.
 - Filter and edit state are part of the URL (`/?view=open&edit=3`), so views can be bookmarked.
 
@@ -125,10 +126,10 @@ Tests are xUnit v3 integration tests on Microsoft.Testing.Platform, using Should
 
 | Method | Route | Result |
 | --- | --- | --- |
-| `GET` | `/todos` | All Todo Items, sorted by id |
-| `GET` | `/todos/{id}` | One Todo Item, or `404` |
-| `POST` | `/todos` | `201` + `Location`, or `400` |
-| `PUT` | `/todos/{id}` | `200` with replaced fields, or `400`/`404` |
+| `GET` | `/todos` | All Todo Items, sorted by id, each with its optional `dueDate` |
+| `GET` | `/todos/{id}` | One Todo Item with its optional `dueDate`, or `404` |
+| `POST` | `/todos` | `201` + `Location` and the created Todo Item (optional `dueDate`), or `400` |
+| `PUT` | `/todos/{id}` | `200` with replaced fields (including `dueDate`), or `400`/`404` |
 | `DELETE` | `/todos/{id}` | `204`, or `404` |
 | `POST` | `/todos/{id}/complete` | `200` with completion applied, or `404` |
 
@@ -137,7 +138,7 @@ Tests are xUnit v3 integration tests on Microsoft.Testing.Platform, using Should
 ```bash
 curl -i -X POST http://localhost:5266/todos \
   -H 'Content-Type: application/json' \
-  -d '{"title":"Buy milk","description":"Semi-skimmed","priority":"high"}'
+  -d '{"title":"Buy milk","description":"Semi-skimmed","priority":"high","dueDate":"2026-11-12"}'
 ```
 
 ```json
@@ -148,7 +149,8 @@ curl -i -X POST http://localhost:5266/todos \
   "createdAt": "2026-11-08T11:16:00+00:00",
   "completedAt": null,
   "priority": "high",
-  "done": false
+  "done": false,
+  "dueDate": "2026-11-12"
 }
 ```
 
@@ -163,7 +165,8 @@ curl -X POST http://localhost:5266/todos/1/complete
 
 - **In-memory only.** Data is lost when the process stops and ids restart at 1. See [ADR-0002](docs/adr/0002-in-memory-store.md).
 - **Completion is one-way.** `done` and `completedAt` are managed by the server; completing twice keeps the first timestamp. Completed items can still be edited and deleted.
-- **Update replaces.** `PUT` replaces `title`, `description`, and `priority`; an omitted description is cleared and an omitted priority resets to `medium`.
+- **Update replaces.** `PUT` replaces `title`, `description`, `priority`, and `dueDate`; an omitted description or due date is cleared and an omitted priority resets to `medium`.
+- **Due Date.** `dueDate` is an optional calendar date in `yyyy-mm-dd` form with no time of day or time zone; any past or future date is valid.
 - **Validation.** `title` is required (max 200 characters); `description` is at most 2000. Unknown JSON members, including `done` and `completedAt`, are rejected.
 - **Errors** are RFC 9457 ProblemDetails.
 - **Timestamps** are ISO 8601 UTC with a `+00:00` offset.

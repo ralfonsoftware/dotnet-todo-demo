@@ -43,6 +43,9 @@ public sealed class IndexModel(
     [BindProperty]
     public Priority NewPriority { get; set; } = TodoDraft.DefaultPriority;
 
+    [BindProperty]
+    public DateOnly? NewDueDate { get; set; }
+
     /// <summary>The board state the view renders. Every handler that renders the page loads it.</summary>
     public BoardReadModel Board =>
         _board ?? throw new InvalidOperationException("The board has not been loaded for this request.");
@@ -56,10 +59,15 @@ public sealed class IndexModel(
 
     public Priority EditPriority { get; private set; } = TodoDraft.DefaultPriority;
 
+    public DateOnly? EditDueDate { get; private set; }
+
     public string? EditError { get; private set; }
 
     /// <summary>The zone board dates are shown in; the same one the "Today" label uses.</summary>
     public TimeZoneInfo TimeZone => _clock.LocalTimeZone;
+
+    /// <summary>The calendar date the board treats as today, in <see cref="TimeZone"/>.</summary>
+    public DateOnly Today => DateOnly.FromDateTime(_clock.GetLocalNow().DateTime);
 
     public void OnGet()
     {
@@ -70,6 +78,7 @@ public sealed class IndexModel(
             EditTitle = edit.Title;
             EditDescription = edit.Description;
             EditPriority = edit.Priority;
+            EditDueDate = edit.DueDate;
         }
         else
         {
@@ -85,7 +94,8 @@ public sealed class IndexModel(
             return Page();
         }
 
-        if (!TodoDraft.TryCreate(NewTitle, NewDescription, NewPriority, out var draft, out var errors))
+        if (!TodoDraft.TryCreate(
+                NewTitle, NewDescription, NewPriority, NewDueDate, out var draft, out var errors))
         {
             TodoLogs.CreateValidationRejected(_logger, TodoOperation.Create.Name, errors.Count);
 
@@ -109,7 +119,12 @@ public sealed class IndexModel(
         return BackToBoard();
     }
 
-    public IActionResult OnPostUpdate(int id, string? editTitle, string? editDescription, Priority? editPriority)
+    public IActionResult OnPostUpdate(
+        int id,
+        string? editTitle,
+        string? editDescription,
+        Priority? editPriority,
+        DateOnly? editDueDate)
     {
         if (!ModelState.IsValid)
         {
@@ -117,15 +132,20 @@ public sealed class IndexModel(
             EditTitle = editTitle ?? string.Empty;
             EditDescription = editDescription ?? string.Empty;
             EditPriority = editPriority ?? TodoDraft.DefaultPriority;
+            EditDueDate = editDueDate;
             EditError = ModelState.TryGetValue(nameof(editPriority), out var priorityState) &&
                         priorityState is { Errors.Count: > 0 }
                 ? "Choose a valid priority."
-                : BoardErrors.FirstErrorMessage(ModelState);
+                : ModelState.TryGetValue(nameof(editDueDate), out var dueDateState) &&
+                  dueDateState is { Errors.Count: > 0 }
+                    ? "Choose a valid due date."
+                    : BoardErrors.FirstErrorMessage(ModelState);
             Load();
             return Page();
         }
 
-        if (!TodoDraft.TryCreate(editTitle, editDescription, editPriority, out var draft, out var errors))
+        if (!TodoDraft.TryCreate(
+                editTitle, editDescription, editPriority, editDueDate, out var draft, out var errors))
         {
             TodoLogs.UpdateValidationRejected(_logger, TodoOperation.Update.Name, id, errors.Count);
 
@@ -133,6 +153,7 @@ public sealed class IndexModel(
             EditTitle = editTitle ?? string.Empty;
             EditDescription = editDescription ?? string.Empty;
             EditPriority = editPriority ?? TodoDraft.DefaultPriority;
+            EditDueDate = editDueDate;
             EditError = MessagesFor(errors, "title")
                 .Concat(MessagesFor(errors, "description"))
                 .First();

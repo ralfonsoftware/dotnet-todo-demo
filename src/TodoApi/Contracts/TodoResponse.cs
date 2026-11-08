@@ -9,7 +9,8 @@ public sealed record TodoResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset? CompletedAt,
     Priority Priority,
-    bool Done)
+    bool Done,
+    DateOnly? DueDate)
 {
     public static TodoResponse From(TodoItem item) => new(
         item.Id,
@@ -18,5 +19,6 @@ public sealed record TodoResponse(
         item.CreatedAt,
         item.CompletedAt,
         item.Priority,
-        item.Done);
+        item.Done,
+        item.DueDate);
 }
