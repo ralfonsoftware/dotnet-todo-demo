@@ -49,6 +49,7 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
     private static readonly ActivitySource Source = new(ActivitySourceName);
 
     private readonly InMemoryTodoStore inner;
+    private readonly object completionGate = new();
     private readonly Meter meter;
     private readonly Counter<long> createdItems;
     private readonly Counter<long> completedItems;
@@ -167,8 +168,14 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
         activity?.SetTag(OperationTag, "complete");
         activity?.SetTag(IdTag, id);
 
-        var existing = LookUpWithPriority(activity, id);
-        var item = inner.Complete(id, completedAt);
+        TodoItem? existing;
+        TodoItem? item;
+        lock (completionGate)
+        {
+            existing = LookUpWithPriority(activity, id);
+            item = inner.Complete(id, completedAt);
+        }
+
         var outcome = existing switch
         {
             null => "not found",
@@ -177,7 +184,7 @@ public sealed class InstrumentedTodoStore : ITodoStore, IDisposable
         };
         activity?.SetTag(OutcomeTag, outcome);
 
-        if (outcome == "completed")
+        if (existing is { Done: false } && item is { Done: true })
         {
             completedItems.Add(1);
         }

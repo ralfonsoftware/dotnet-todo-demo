@@ -5,8 +5,8 @@ using Shouldly;
 namespace TodoApi.Tests;
 
 /// <summary>
-/// One recorded measurement. Tags are copied out of the callback so the span
-/// that owns them can be released safely.
+/// One recorded measurement. Tags are copied out of the callback because the
+/// callback's tag span is only valid for the duration of the callback.
 /// </summary>
 internal readonly record struct MetricMeasurement(
     string InstrumentName,

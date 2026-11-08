@@ -133,6 +133,24 @@ public sealed class InstrumentedTodoStoreMetricsTests
     }
 
     [Fact]
+    public async Task ConcurrentCompletions_RecordOneItemCompleted()
+    {
+        var inner = new InMemoryTodoStore();
+        var item = inner.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
+        using var store = new InstrumentedTodoStore(inner);
+        using var metrics = new MetricsCapture(InstrumentedTodoStore.MeterName);
+
+        var completions = Enumerable.Range(0, 32)
+            .Select(hour => Task.Run(() => store.Complete(
+                item.Id, DateTimeOffset.UnixEpoch.AddHours(hour))))
+            .ToArray();
+
+        await Task.WhenAll(completions);
+
+        metrics.Single("todo.items.completed").Value.ShouldBe(1L);
+    }
+
+    [Fact]
     public void Gauges_ReportTheCurrentTotalAndDoneCounts()
     {
         var inner = new InMemoryTodoStore();
