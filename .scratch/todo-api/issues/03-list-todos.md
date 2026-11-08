@@ -1,6 +1,6 @@
 # 03 — List todos
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 ## Scope
@@ -17,3 +17,7 @@ Blocked by: 02
 
 - Empty store returns an empty array.
 - Seeded items return in id order with the full wire shape.
+
+## Outcome
+
+`GET /todos` returns a camelCase response array ordered by id. Tests use a per-test host (`ApiTest`), so every test starts from an empty store.
