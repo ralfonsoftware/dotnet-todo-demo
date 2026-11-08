@@ -19,6 +19,7 @@ namespace TodoApi.Storage;
 /// </remarks>
 public sealed class TracingTodoStore(InMemoryTodoStore inner) : ITodoStore
 {
+    /// <summary>The name of the activity source that emits Todos Store spans.</summary>
     public const string ActivitySourceName = "TodoApi.TodosStore";
 
     private const string OperationTag = "todo.operation";
@@ -45,12 +46,7 @@ public sealed class TracingTodoStore(InMemoryTodoStore inner) : ITodoStore
         activity?.SetTag(OperationTag, "get");
         activity?.SetTag(IdTag, id);
 
-        var item = inner.Get(id);
-        if (item is not null)
-        {
-            activity?.SetTag(PriorityTag, Format(item.Priority));
-        }
-
+        var item = LookUpWithPriority(activity, id);
         activity?.SetTag(OutcomeTag, item is null ? "not found" : "found");
         return item;
     }
@@ -59,7 +55,7 @@ public sealed class TracingTodoStore(InMemoryTodoStore inner) : ITodoStore
     {
         using var activity = Source.StartActivity("todos.create", ActivityKind.Internal);
         activity?.SetTag(OperationTag, "create");
-        activity?.SetTag(PriorityTag, Format(priority));
+        activity?.SetTag(PriorityTag, FormatPriority(priority));
 
         var item = inner.Create(title, description, priority, createdAt);
         activity?.SetTag(IdTag, item.Id);
@@ -73,7 +69,7 @@ public sealed class TracingTodoStore(InMemoryTodoStore inner) : ITodoStore
         using var activity = Source.StartActivity("todos.update", ActivityKind.Internal);
         activity?.SetTag(OperationTag, "update");
         activity?.SetTag(IdTag, id);
-        activity?.SetTag(PriorityTag, Format(priority));
+        activity?.SetTag(PriorityTag, FormatPriority(priority));
 
         var item = inner.Update(id, title, description, priority);
         activity?.SetTag(OutcomeTag, item is null ? "not found" : "updated");
@@ -87,12 +83,7 @@ public sealed class TracingTodoStore(InMemoryTodoStore inner) : ITodoStore
         activity?.SetTag(OperationTag, "complete");
         activity?.SetTag(IdTag, id);
 
-        var existing = inner.Get(id);
-        if (existing is not null)
-        {
-            activity?.SetTag(PriorityTag, Format(existing.Priority));
-        }
-
+        var existing = LookUpWithPriority(activity, id);
         var item = inner.Complete(id, completedAt);
         activity?.SetTag(OutcomeTag, existing switch
         {
@@ -110,17 +101,23 @@ public sealed class TracingTodoStore(InMemoryTodoStore inner) : ITodoStore
         activity?.SetTag(OperationTag, "delete");
         activity?.SetTag(IdTag, id);
 
-        var existing = inner.Get(id);
-        if (existing is not null)
-        {
-            activity?.SetTag(PriorityTag, Format(existing.Priority));
-        }
-
+        LookUpWithPriority(activity, id);
         var deleted = inner.Delete(id);
         activity?.SetTag(OutcomeTag, deleted ? "deleted" : "not found");
 
         return deleted;
     }
 
-    private static string Format(Priority priority) => priority.ToString().ToLowerInvariant();
+    private TodoItem? LookUpWithPriority(Activity? activity, int id)
+    {
+        var item = inner.Get(id);
+        if (item is not null)
+        {
+            activity?.SetTag(PriorityTag, FormatPriority(item.Priority));
+        }
+
+        return item;
+    }
+
+    private static string FormatPriority(Priority priority) => priority.ToString().ToLowerInvariant();
 }

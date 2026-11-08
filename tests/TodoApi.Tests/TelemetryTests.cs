@@ -1,6 +1,4 @@
 using System.Net;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -165,14 +163,5 @@ public sealed class TelemetryTests
 
         Should.Throw<InvalidOperationException>(() =>
             TelemetryOptions.Resolve(new ConfigurationBuilder().Build(), "Development"));
-    }
-
-    private sealed class TelemetryEnabledFactory : WebApplicationFactory<Program>
-    {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.UseEnvironment("Testing");
-            builder.UseSetting("OpenTelemetry:Enabled", "true");
-        }
     }
 }
