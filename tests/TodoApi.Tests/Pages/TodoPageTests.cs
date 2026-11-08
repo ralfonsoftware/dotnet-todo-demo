@@ -545,6 +545,35 @@ public sealed class TodoPageTests : ApiTest
     }
 
     [Fact]
+    public async Task Home_OverdueViewListsOnlyOpenItemsPastTheirDueDate()
+    {
+        Seed("Late report", dueDate: new DateOnly(2000, 1, 1));
+        Seed("Due soon", dueDate: new DateOnly(2999, 1, 1));
+        Seed("No due date");
+        SeedCompleted("Finished late", dueDate: new DateOnly(2000, 1, 1));
+
+        var html = await GetHtmlAsync("/?view=overdue");
+
+        html.ShouldContain("Late report");
+        html.ShouldNotContain("Due soon");
+        html.ShouldNotContain("No due date");
+        html.ShouldNotContain("Finished late");
+        Regex.IsMatch(html, @"<a aria-current=""page"" href=""/\?view=overdue"">\s*Overdue\s*<span class=""count"">1</span>")
+            .ShouldBeTrue("The Overdue filter should be current and count only open past-due todos.");
+    }
+
+    [Fact]
+    public async Task Home_OverdueViewWithNothingOverdue_ShowsOverdueEmptyCopy()
+    {
+        Seed("Due soon", dueDate: new DateOnly(2999, 1, 1));
+
+        var html = await GetHtmlAsync("/?view=overdue");
+
+        html.ShouldContain("Nothing overdue");
+        html.ShouldContain("Open todos past their due date will collect here.");
+    }
+
+    [Fact]
     public async Task Home_OpenPastDueItem_ShowsDueDateAndOverdueClass()
     {
         Seed("Send the report", dueDate: new DateOnly(2000, 1, 1));

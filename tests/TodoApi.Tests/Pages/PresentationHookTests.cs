@@ -88,6 +88,7 @@ public sealed class PresentationHookTests : ApiTest
 
     [Theory]
     [InlineData(BoardFilter.Open, "open")]
+    [InlineData(BoardFilter.Overdue, "overdue")]
     [InlineData(BoardFilter.Done, "done")]
     [InlineData(BoardFilter.All, "all")]
     public void FilterValue_RoundTripsThroughParseFilter(BoardFilter filter, string value)

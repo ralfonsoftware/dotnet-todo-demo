@@ -125,7 +125,7 @@
             </span>
             <h3>@Model.Board.EmptyTitle</h3>
             <p>@Model.Board.EmptyBody</p>
-            @if (Model.Filter != BoardFilter.Done)
+            @if (Model.Filter is BoardFilter.Open or BoardFilter.All)
             {
                 <a href="#new">Add a todo</a>
             }
