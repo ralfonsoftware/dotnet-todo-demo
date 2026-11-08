@@ -27,17 +27,21 @@ internal static class CreateTodo
         TimeProvider clock,
         ILogger<TodoLogCategory> logger)
     {
-        var errors = TodoInput.Validate(request.Title, request.Description);
-        if (errors.Count > 0)
+        if (!TodoDraft.TryCreate(
+                request.Title,
+                request.Description,
+                request.Priority,
+                out var draft,
+                out var errors))
         {
             TodoLogs.CreateValidationRejected(logger, TodoOperation.Create.Name, errors.Count);
             return TypedResults.ValidationProblem(errors);
         }
 
         var item = store.Create(
-            TodoInput.NormalizeTitle(request.Title!),
-            TodoInput.NormalizeDescription(request.Description),
-            request.Priority ?? Priority.Medium,
+            draft.Title,
+            draft.Description,
+            draft.Priority,
             clock.GetUtcNow());
 
         TodoLogs.CreateSucceeded(logger, TodoOperation.Create.Name, item.Id, item.Priority);

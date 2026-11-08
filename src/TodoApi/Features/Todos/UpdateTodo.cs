@@ -27,8 +27,12 @@ internal static class UpdateTodo
         ITodoStore store,
         ILogger<TodoLogCategory> logger)
     {
-        var errors = TodoInput.Validate(request.Title, request.Description);
-        if (errors.Count > 0)
+        if (!TodoDraft.TryCreate(
+                request.Title,
+                request.Description,
+                request.Priority,
+                out var draft,
+                out var errors))
         {
             TodoLogs.UpdateValidationRejected(logger, TodoOperation.Update.Name, id, errors.Count);
             return TypedResults.ValidationProblem(errors);
@@ -36,9 +40,9 @@ internal static class UpdateTodo
 
         var item = store.Update(
             id,
-            TodoInput.NormalizeTitle(request.Title!),
-            TodoInput.NormalizeDescription(request.Description),
-            request.Priority ?? Priority.Medium);
+            draft.Title,
+            draft.Description,
+            draft.Priority);
 
         if (item is null)
         {

@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -32,16 +31,13 @@ public sealed class IndexModel : PageModel
     public int? EditId { get; set; }
 
     [BindProperty]
-    [Required(ErrorMessage = "Title is required.")]
-    [StringLength(200, ErrorMessage = "Title must be 200 characters or fewer.")]
     public string? NewTitle { get; set; }
 
     [BindProperty]
-    [StringLength(2000, ErrorMessage = "Description must be 2000 characters or fewer.")]
     public string? NewDescription { get; set; }
 
     [BindProperty]
-    public Priority NewPriority { get; set; } = Priority.Medium;
+    public Priority NewPriority { get; set; } = TodoDraft.DefaultPriority;
 
     public IReadOnlyList<TodoItem> Items { get; private set; } = [];
 
@@ -62,7 +58,7 @@ public sealed class IndexModel : PageModel
 
     public string EditDescription { get; private set; } = string.Empty;
 
-    public Priority EditPriority { get; private set; } = Priority.Medium;
+    public Priority EditPriority { get; private set; } = TodoDraft.DefaultPriority;
 
     public string? EditError { get; private set; }
 
@@ -93,34 +89,48 @@ public sealed class IndexModel : PageModel
             return Page();
         }
 
+        if (!TodoDraft.TryCreate(NewTitle, NewDescription, NewPriority, out var draft, out var errors))
+        {
+            foreach (var message in MessagesFor(errors, "title"))
+            {
+                ModelState.AddModelError(nameof(NewTitle), message);
+            }
+
+            foreach (var message in MessagesFor(errors, "description"))
+            {
+                ModelState.AddModelError(nameof(NewDescription), message);
+            }
+
+            Load();
+            return Page();
+        }
+
         var item = _store.Create(
-            NewTitle!.Trim(),
-            string.IsNullOrWhiteSpace(NewDescription) ? null : NewDescription.Trim(),
-            NewPriority,
+            draft.Title,
+            draft.Description,
+            draft.Priority,
             _clock.GetUtcNow());
 
         TempData["Toast"] = $"Added \u201c{item.Title}\u201d.";
         return BackToBoard();
     }
 
-    public IActionResult OnPostUpdate(int id, string? editTitle, string? editDescription, Priority editPriority)
+    public IActionResult OnPostUpdate(int id, string? editTitle, string? editDescription, Priority? editPriority)
     {
-        var title = editTitle?.Trim();
-        var description = string.IsNullOrWhiteSpace(editDescription) ? null : editDescription.Trim();
-        var error = ValidateEdit(title, description);
-
-        if (error is not null)
+        if (!TodoDraft.TryCreate(editTitle, editDescription, editPriority, out var draft, out var errors))
         {
             EditId = id;
             EditTitle = editTitle ?? string.Empty;
             EditDescription = editDescription ?? string.Empty;
-            EditPriority = editPriority;
-            EditError = error;
+            EditPriority = editPriority ?? TodoDraft.DefaultPriority;
+            EditError = MessagesFor(errors, "title")
+                .Concat(MessagesFor(errors, "description"))
+                .First();
             Load();
             return Page();
         }
 
-        if (_store.Update(id, title!, description, editPriority) is null)
+        if (_store.Update(id, draft.Title, draft.Description, draft.Priority) is null)
         {
             TempData["Toast"] = "That todo no longer exists.";
         }
@@ -158,25 +168,9 @@ public sealed class IndexModel : PageModel
     private static string NormalizeFilter(string? value) =>
         value is "all" or "done" or "open" ? value : DefaultFilter;
 
-    private static string? ValidateEdit(string? title, string? description)
-    {
-        if (string.IsNullOrWhiteSpace(title))
-        {
-            return "Title is required.";
-        }
-
-        if (title.Length > 200)
-        {
-            return "Title must be 200 characters or fewer.";
-        }
-
-        if (description is { Length: > 2000 })
-        {
-            return "Description must be 2000 characters or fewer.";
-        }
-
-        return null;
-    }
+    private static IEnumerable<string> MessagesFor(
+        Dictionary<string, string[]> errors, string key) =>
+        errors.TryGetValue(key, out var messages) ? messages : [];
 
     private void Load()
     {

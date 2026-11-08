@@ -8,6 +8,10 @@ A small demo HTTP API for tracking todo items through to completion.
 A unit of work tracked by the API, identified by a number and carrying a title, an optional description, a priority, and its completion state.
 _Avoid_: Task, to-do, ticket, entry
 
+**Todo Draft**:
+The title, optional description, and Priority supplied when creating or editing a Todo Item, before validation and normalization.
+_Avoid_: Request, payload, form input
+
 **Completion**:
 The one-way transition of a Todo Item to Done, stamped with the time it happened. A Completion either applies the transition or finds the Todo Item already done, in which case the original timestamp is kept; a completed Todo Item never returns to open.
 _Avoid_: Close, finish, resolve, check off

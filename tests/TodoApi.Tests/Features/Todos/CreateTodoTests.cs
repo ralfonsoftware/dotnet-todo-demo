@@ -95,7 +95,7 @@ public sealed class CreateTodoTests : ApiTest
     [Fact]
     public async Task Create_WithOverlongTitle_ReturnsValidationProblem()
     {
-        var title = new string('a', TodoInputLimits.TitleMaxLength + 1);
+        var title = new string('a', TodoDraft.TitleMaxLength + 1);
         using var response = await PostJson($$"""{"title":"{{title}}"}""");
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -105,7 +105,7 @@ public sealed class CreateTodoTests : ApiTest
     [Fact]
     public async Task Create_WithOverlongDescription_ReturnsValidationProblem()
     {
-        var description = new string('a', TodoInputLimits.DescriptionMaxLength + 1);
+        var description = new string('a', TodoDraft.DescriptionMaxLength + 1);
         using var response = await PostJson(
             $$"""{"title":"Valid","description":"{{description}}"}""");
 
@@ -162,10 +162,4 @@ public sealed class CreateTodoTests : ApiTest
 
     private static async Task<JsonDocument> ReadJson(HttpResponseMessage response) =>
         JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
-}
-
-internal static class TodoInputLimits
-{
-    public const int TitleMaxLength = 200;
-    public const int DescriptionMaxLength = 2000;
 }

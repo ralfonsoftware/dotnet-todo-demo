@@ -96,6 +96,37 @@ public sealed class TodoPageTests : ApiTest
     }
 
     [Fact]
+    public async Task CreateAndUpdate_WithPaddedMaxLengthTitle_TrimsBeforeMeasuring()
+    {
+        var createdTitle = new string('a', 200);
+
+        var created = await PostFormAsync("Create", new()
+        {
+            ["NewTitle"] = $"  {createdTitle}  ",
+            ["NewPriority"] = "Medium"
+        });
+
+        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var createdHtml = await created.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        createdHtml.ShouldNotContain("Title must be 200 characters or fewer.");
+        var item = Store.GetAll().ShouldHaveSingleItem();
+        item.Title.ShouldBe(createdTitle);
+
+        var editedTitle = new string('b', 200);
+
+        var edited = await PostFormAsync("Update", new()
+        {
+            ["editTitle"] = $"  {editedTitle}  ",
+            ["editPriority"] = "High"
+        }, id: item.Id);
+
+        edited.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var editedHtml = await edited.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        editedHtml.ShouldNotContain("Title must be 200 characters or fewer.");
+        Store.Get(item.Id).ShouldNotBeNull().Title.ShouldBe(editedTitle);
+    }
+
+    [Fact]
     public async Task Complete_MarksTodoDoneWithCompletionTime()
     {
         var item = Seed("Walk the dog");
@@ -126,6 +157,20 @@ public sealed class TodoPageTests : ApiTest
         updated.Description.ShouldBe("New note");
         updated.Priority.ShouldBe(Priority.High);
         updated.CreatedAt.ShouldBe(item.CreatedAt);
+    }
+
+    [Fact]
+    public async Task Update_WithoutPriority_DefaultsToMedium()
+    {
+        var item = Seed("Keep me", priority: Priority.Low);
+
+        var response = await PostFormAsync("Update", new()
+        {
+            ["editTitle"] = "Keep me"
+        }, id: item.Id);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        Store.Get(item.Id).ShouldNotBeNull().Priority.ShouldBe(Priority.Medium);
     }
 
     [Fact]
