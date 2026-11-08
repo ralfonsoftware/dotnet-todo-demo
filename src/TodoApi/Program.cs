@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Scalar.AspNetCore;
 using TodoApi.Features.Todos;
+using TodoApi.Logging;
 using TodoApi.Storage;
 using TodoApi.Telemetry;
 
@@ -21,7 +22,8 @@ builder.Services.AddSingleton<InMemoryTodoStore>();
 builder.Services.AddSingleton<ITodoStore>(services =>
     new InstrumentedTodoStore(
         services.GetRequiredService<InMemoryTodoStore>(),
-        services.GetRequiredService<IMeterFactory>()));
+        services.GetRequiredService<IMeterFactory>(),
+        services.GetRequiredService<ILogger<TodoLogCategory>>()));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddTodoApiTelemetry(builder.Configuration, builder.Environment.EnvironmentName);
 

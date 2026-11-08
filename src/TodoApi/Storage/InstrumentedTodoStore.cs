@@ -1,21 +1,25 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using TodoApi.Domain;
+using TodoApi.Logging;
 using TodoApi.Telemetry;
 
 namespace TodoApi.Storage;
 
 /// <summary>
-/// Decorates an <see cref="ITodoStore"/> with one Activity and one set of
-/// measurements per Todos Store operation, so a request trace shows which
-/// store operation ran and how it ended, while metrics summarise Todo Item
-/// lifecycle activity without recording Todo Item title or description.
+/// Decorates an <see cref="ITodoStore"/> with one Activity, one set of
+/// measurements, and one outcome log record per Todos Store operation, so a
+/// request trace shows which store operation ran and how it ended, metrics
+/// summarise Todo Item lifecycle activity, and every caller gets the same
+/// outcome logs, all without recording Todo Item title or description.
 /// </summary>
 /// <remarks>
 /// The operation names, tag keys, instrument names, units, and outcome values
 /// come from <see cref="TodoOperation"/> and <see cref="TodoTelemetry"/>.
-/// Every operation emits exactly one span and one duration measurement, and no
-/// span ever tags a Todo Item title or description.
+/// Every operation emits exactly one span, one duration measurement, and one
+/// <see cref="TodoLogs"/> outcome record under <see cref="TodoLogCategory"/>
+/// (ADR-0006). No span or log ever carries a Todo Item title or description.
+/// Callers log only what the store cannot know: validation rejections.
 /// <para>
 /// <c>todo.items.completed</c> advances only for a real not-Done to Done
 /// transition; replaying a Completion is reported as <c>already done</c> and
@@ -27,6 +31,7 @@ public sealed class InstrumentedTodoStore : ITodoStore
     private static readonly ActivitySource Source = new(TodoTelemetry.ActivitySourceName);
 
     private readonly ITodoStore _inner;
+    private readonly ILogger<TodoLogCategory> _logger;
     private readonly Counter<long> _createdItems;
     private readonly Counter<long> _completedItems;
     private readonly Counter<long> _deletedItems;
@@ -38,12 +43,18 @@ public sealed class InstrumentedTodoStore : ITodoStore
     /// Creates the <see cref="TodoTelemetry.MeterName"/> meter. The factory
     /// owns the meter's lifetime and scopes it to its container.
     /// </param>
-    public InstrumentedTodoStore(ITodoStore inner, IMeterFactory meterFactory)
+    /// <param name="logger">Receives one outcome record per operation.</param>
+    public InstrumentedTodoStore(
+        ITodoStore inner,
+        IMeterFactory meterFactory,
+        ILogger<TodoLogCategory> logger)
     {
         ArgumentNullException.ThrowIfNull(inner);
         ArgumentNullException.ThrowIfNull(meterFactory);
+        ArgumentNullException.ThrowIfNull(logger);
 
         _inner = inner;
+        _logger = logger;
         var meter = meterFactory.Create(TodoTelemetry.MeterName);
         _createdItems = meter.CreateCounter<long>(
             TodoTelemetry.Instruments.ItemsCreated,
@@ -85,6 +96,7 @@ public sealed class InstrumentedTodoStore : ITodoStore
 
         var items = _inner.GetAll();
         activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.Found);
+        TodoLogs.ListSucceeded(_logger, TodoOperation.List.Name, items.Count);
 
         return items;
     }
@@ -103,6 +115,11 @@ public sealed class InstrumentedTodoStore : ITodoStore
         if (item is null)
         {
             RecordFailure(TodoOperation.Get, outcome);
+            TodoLogs.NotFound(_logger, id, TodoOperation.Get.Name);
+        }
+        else
+        {
+            TodoLogs.GetSucceeded(_logger, TodoOperation.Get.Name, item.Id);
         }
 
         return item;
@@ -120,6 +137,7 @@ public sealed class InstrumentedTodoStore : ITodoStore
             TodoTelemetry.Tags.Priority, FormatPriority(item.Priority)));
         activity?.SetTag(TodoTelemetry.Tags.Id, item.Id);
         activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.Created);
+        TodoLogs.CreateSucceeded(_logger, TodoOperation.Create.Name, item.Id, item.Priority);
 
         return item;
     }
@@ -139,6 +157,11 @@ public sealed class InstrumentedTodoStore : ITodoStore
         if (item is null)
         {
             RecordFailure(TodoOperation.Update, outcome);
+            TodoLogs.NotFound(_logger, id, TodoOperation.Update.Name);
+        }
+        else
+        {
+            TodoLogs.UpdateSucceeded(_logger, TodoOperation.Update.Name, item.Id, item.Priority);
         }
 
         return item;
@@ -158,15 +181,19 @@ public sealed class InstrumentedTodoStore : ITodoStore
             case CompletionResult.NotFound:
                 activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.NotFound);
                 RecordFailure(TodoOperation.Complete, TodoTelemetry.Outcomes.NotFound);
+                TodoLogs.NotFound(_logger, id, TodoOperation.Complete.Name);
                 break;
             case CompletionResult.Completed completed:
                 activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.Completed);
                 activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(completed.Item.Priority));
                 _completedItems.Add(1);
+                TodoLogs.CompleteSucceeded(
+                    _logger, TodoOperation.Complete.Name, completed.Item.Id, completed.Item.Priority);
                 break;
             case CompletionResult.AlreadyDone alreadyDone:
                 activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.AlreadyDone);
                 activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(alreadyDone.Item.Priority));
+                TodoLogs.CompleteAlreadyDone(_logger, TodoOperation.Complete.Name, alreadyDone.Item.Id);
                 break;
         }
 
@@ -185,15 +212,15 @@ public sealed class InstrumentedTodoStore : ITodoStore
         {
             _deletedItems.Add(1);
             activity?.SetTag(TodoTelemetry.Tags.Priority, FormatPriority(deleted.Priority));
+            activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.Deleted);
+            TodoLogs.DeleteSucceeded(_logger, TodoOperation.Delete.Name, deleted.Id, deleted.Priority);
         }
         else
         {
+            activity?.SetTag(TodoTelemetry.Tags.Outcome, TodoTelemetry.Outcomes.NotFound);
             RecordFailure(TodoOperation.Delete, TodoTelemetry.Outcomes.NotFound);
+            TodoLogs.NotFound(_logger, id, TodoOperation.Delete.Name);
         }
-
-        activity?.SetTag(
-            TodoTelemetry.Tags.Outcome,
-            deleted is not null ? TodoTelemetry.Outcomes.Deleted : TodoTelemetry.Outcomes.NotFound);
 
         return deleted;
     }

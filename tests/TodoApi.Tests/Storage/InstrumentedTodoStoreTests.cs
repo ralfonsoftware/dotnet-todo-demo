@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using TodoApi.Domain;
+using TodoApi.Logging;
 using TodoApi.Storage;
 using TodoApi.Telemetry;
 
@@ -12,7 +14,7 @@ public sealed class InstrumentedTodoStoreTests
     public void List_EmitsASingleFoundSpan()
     {
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.GetAll();
@@ -31,7 +33,7 @@ public sealed class InstrumentedTodoStoreTests
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", "Semi-skimmed", Priority.High), DateTimeOffset.UnixEpoch);
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(inner, meterFactory);
+        var store = new InstrumentedTodoStore(inner, meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var found = store.Get(item.Id);
@@ -49,7 +51,7 @@ public sealed class InstrumentedTodoStoreTests
     public void Get_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Get(42).ShouldBeNull();
@@ -66,7 +68,7 @@ public sealed class InstrumentedTodoStoreTests
     public void Create_EmitsASingleCreatedSpanWithIdAndPriority()
     {
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var created = store.Create(Drafts.Of("Buy milk", "Semi-skimmed", Priority.Low), DateTimeOffset.UnixEpoch);
@@ -85,7 +87,7 @@ public sealed class InstrumentedTodoStoreTests
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Old title", "Old description", Priority.Low), DateTimeOffset.UnixEpoch);
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(inner, meterFactory);
+        var store = new InstrumentedTodoStore(inner, meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var updated = store.Update(item.Id, Drafts.Of("New title", "New description", Priority.High));
@@ -103,7 +105,7 @@ public sealed class InstrumentedTodoStoreTests
     public void Update_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Update(42, Drafts.Of("New title", null, Priority.Medium)).ShouldBeNull();
@@ -122,7 +124,7 @@ public sealed class InstrumentedTodoStoreTests
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", null, Priority.High), DateTimeOffset.UnixEpoch);
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(inner, meterFactory);
+        var store = new InstrumentedTodoStore(inner, meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1))
@@ -144,7 +146,7 @@ public sealed class InstrumentedTodoStoreTests
         var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
         inner.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(inner, meterFactory);
+        var store = new InstrumentedTodoStore(inner, meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(2))
@@ -163,7 +165,7 @@ public sealed class InstrumentedTodoStoreTests
     public void Complete_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Complete(42, DateTimeOffset.UnixEpoch)
@@ -183,7 +185,7 @@ public sealed class InstrumentedTodoStoreTests
         var inner = new InMemoryTodoStore();
         var item = inner.Create(Drafts.Of("Buy milk", null, Priority.Low), DateTimeOffset.UnixEpoch);
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(inner, meterFactory);
+        var store = new InstrumentedTodoStore(inner, meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Delete(item.Id).ShouldNotBeNull();
@@ -200,7 +202,7 @@ public sealed class InstrumentedTodoStoreTests
     public void Delete_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory);
+        var store = new InstrumentedTodoStore(new InMemoryTodoStore(), meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         store.Delete(42).ShouldBeNull();
@@ -218,7 +220,7 @@ public sealed class InstrumentedTodoStoreTests
     {
         var inner = new InMemoryTodoStore();
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(inner, meterFactory);
+        var store = new InstrumentedTodoStore(inner, meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var item = store.Create(Drafts.Of("Buy milk", null, Priority.Medium), DateTimeOffset.UnixEpoch);
@@ -254,7 +256,7 @@ public sealed class InstrumentedTodoStoreTests
 
         var inner = new InMemoryTodoStore();
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(inner, meterFactory);
+        var store = new InstrumentedTodoStore(inner, meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
 
         var item = store.Create(Drafts.Of(title, description, Priority.High), DateTimeOffset.UnixEpoch);

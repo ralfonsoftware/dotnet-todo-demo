@@ -1,18 +1,26 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
 using TodoApi.Domain;
+using TodoApi.Logging;
 using TodoApi.Storage;
+using TodoApi.Telemetry;
 
 namespace TodoApi.Pages;
 
-public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<IndexModel> logger) : PageModel
+/// <summary>
+/// The board. Reads and writes go straight to the Todos Store, whose decorator
+/// logs every outcome; the page logs only validation rejections (ADR-0006).
+/// </summary>
+public sealed class IndexModel(
+    ITodoStore store,
+    TimeProvider clock,
+    ILogger<TodoLogCategory> logger) : PageModel
 {
     private const string DefaultFilter = "open";
 
     private readonly ITodoStore _store = store;
     private readonly TimeProvider _clock = clock;
-    private readonly BoardMutations _mutations = new(store, logger);
+    private readonly ILogger<TodoLogCategory> _logger = logger;
     private string _filter = DefaultFilter;
 
     [BindProperty(SupportsGet = true, Name = "view")]
@@ -88,7 +96,7 @@ public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<Ind
 
         if (!TodoDraft.TryCreate(NewTitle, NewDescription, NewPriority, out var draft, out var errors))
         {
-            _mutations.CreateRejected(errors.Count);
+            TodoLogs.CreateValidationRejected(_logger, TodoOperation.Create.Name, errors.Count);
 
             foreach (var message in MessagesFor(errors, "title"))
             {
@@ -104,7 +112,7 @@ public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<Ind
             return Page();
         }
 
-        var item = _mutations.Create(draft, _clock.GetUtcNow());
+        var item = _store.Create(draft, _clock.GetUtcNow());
 
         TempData["Toast"] = $"Added \u201c{item.Title}\u201d.";
         return BackToBoard();
@@ -131,7 +139,7 @@ public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<Ind
 
         if (!TodoDraft.TryCreate(editTitle, editDescription, editPriority, out var draft, out var errors))
         {
-            _mutations.UpdateRejected(id, errors.Count);
+            TodoLogs.UpdateValidationRejected(_logger, TodoOperation.Update.Name, id, errors.Count);
 
             EditId = id;
             EditTitle = editTitle ?? string.Empty;
@@ -144,7 +152,7 @@ public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<Ind
             return Page();
         }
 
-        if (_mutations.Update(id, draft) is null)
+        if (_store.Update(id, draft) is null)
         {
             TempData["Toast"] = "That todo no longer exists.";
         }
@@ -158,7 +166,7 @@ public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<Ind
 
     public IActionResult OnPostComplete(int id)
     {
-        var result = _mutations.Complete(id, _clock.GetUtcNow());
+        var result = _store.Complete(id, _clock.GetUtcNow());
         TempData["Toast"] = result switch
         {
             CompletionResult.Completed => "Done. One less thing to think about.",
@@ -171,7 +179,7 @@ public sealed class IndexModel(ITodoStore store, TimeProvider clock, ILogger<Ind
 
     public IActionResult OnPostDelete(int id)
     {
-        var item = _mutations.Delete(id);
+        var item = _store.Delete(id);
         TempData["Toast"] = item is null
             ? "That todo no longer exists."
             : $"Deleted \u201c{item.Title}\u201d.";

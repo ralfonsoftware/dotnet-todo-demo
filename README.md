@@ -109,6 +109,10 @@ The counters advance once per successful mutation: `todo.items.created` on Creat
 
 The gauges read the raw Todos Store on each collection, so they report the current total number of Todo Items and the current number of Done Todo Items without emitting an extra span or measurement. The duration histogram records every Todos Store operation in seconds (via `Stopwatch.GetElapsedTime`), tagged with `todo.operation`, including operations that end not found.
 
+### Todo Item logs
+
+Todo Item logs use the `TodoApi.Logging.TodoLogCategory` category and stable event ids (`TodoEventIds`). The Todos Store decorator writes one outcome record per store operation — succeeded, not found, or already done — whether the API or the board called it. The API slices and the board log only validation rejections, which never reach the store. Logs never contain a Todo Item title or description. See [ADR-0006](docs/adr/0006-store-decorator-owns-outcome-logs.md).
+
 ## Test
 
 ```bash
@@ -173,4 +177,5 @@ curl -X POST http://localhost:5266/todos/1/complete
 - [ADR-0003: OpenTelemetry and the Aspire Dashboard](docs/adr/0003-opentelemetry-and-aspire-dashboard.md)
 - [ADR-0004: Completion is a reported transition](docs/adr/0004-completion-is-a-reported-transition.md)
 - [ADR-0005: server-rendered Razor Pages UI](docs/adr/0005-server-rendered-razor-pages-ui.md)
+- [ADR-0006: the store decorator owns Todo Item outcome logs](docs/adr/0006-store-decorator-owns-outcome-logs.md)
 - Implementation tickets: [`.scratch/todo-api/issues/`](.scratch/todo-api/issues/)

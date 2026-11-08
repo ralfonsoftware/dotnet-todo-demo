@@ -40,8 +40,6 @@ internal static class CreateTodo
 
         var item = store.Create(draft, clock.GetUtcNow());
 
-        TodoLogs.CreateSucceeded(logger, TodoOperation.Create.Name, item.Id, item.Priority);
-
         return TypedResults.Created($"/todos/{item.Id}", TodoResponse.From(item));
     }
 }

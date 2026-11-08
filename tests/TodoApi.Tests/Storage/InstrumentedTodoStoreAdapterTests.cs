@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using TodoApi.Domain;
+using TodoApi.Logging;
 using TodoApi.Storage;
 using TodoApi.Telemetry;
 
@@ -19,7 +21,7 @@ public sealed class InstrumentedTodoStoreAdapterTests
     {
         var adapter = new RecordingTodoStore();
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(adapter, meterFactory);
+        var store = new InstrumentedTodoStore(adapter, meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var capture = new ActivityCapture(TodoTelemetry.ActivitySourceName);
         using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
@@ -68,7 +70,7 @@ public sealed class InstrumentedTodoStoreAdapterTests
         var done = adapter.Create(Drafts.Of("Ship the demo", null, Priority.High), DateTimeOffset.UnixEpoch);
         adapter.Complete(done.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         using var meterFactory = TestMeters.NewFactory();
-        var store = new InstrumentedTodoStore(adapter, meterFactory);
+        var store = new InstrumentedTodoStore(adapter, meterFactory, NullLogger<TodoLogCategory>.Instance);
         using var metrics = new MetricsCapture(meterFactory, TodoTelemetry.MeterName);
 
         metrics.ObserveGauges();

@@ -5,15 +5,22 @@ namespace TodoApi.Logging;
 /// <summary>
 /// Log category for Todo Item operations. Static handler classes cannot be
 /// used as a generic <see cref="Microsoft.Extensions.Logging.ILogger{T}"/>
-/// argument, so handlers inject this marker type instead.
+/// argument, so the Todos Store decorator, the HTTP slices, and the board
+/// inject this marker type instead. Every Todo Item event shares it.
 /// </summary>
-internal sealed class TodoLogCategory;
+public sealed class TodoLogCategory;
 
 /// <summary>
 /// Source-generated log events for Todo Item operations. Every record carries
 /// named properties instead of interpolated text, and never includes a Todo
 /// Item title or description.
 /// </summary>
+/// <remarks>
+/// The store decorator (<c>InstrumentedTodoStore</c>) emits every outcome
+/// event: succeeded, not found, and already done. Callers emit only the
+/// validation-rejected events, because the store never sees rejected input
+/// (ADR-0006).
+/// </remarks>
 internal static partial class TodoLogs
 {
     [LoggerMessage(

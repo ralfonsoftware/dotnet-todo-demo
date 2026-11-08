@@ -7,6 +7,11 @@ namespace TodoApi.Storage;
 /// may be called concurrently, and every timestamp is supplied by the caller
 /// and stored as given.
 /// </summary>
+/// <remarks>
+/// The registered instance is wrapped in <see cref="InstrumentedTodoStore"/>,
+/// which emits one span, one set of measurements, and one outcome log per
+/// call. Callers must not log store outcomes themselves (ADR-0006).
+/// </remarks>
 public interface ITodoStore
 {
     /// <summary>
