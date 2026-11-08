@@ -11,7 +11,7 @@ public sealed class GetTodoTests : ApiTest
     [Fact]
     public async Task Get_WhenItemExists_ReturnsEveryField()
     {
-        var item = Seed("Buy milk", "Semi-skimmed");
+        var item = Seed("Buy milk", "Semi-skimmed", dueDate: new DateOnly(2026, 11, 12));
 
         using var response = await Client.GetAsync($"/todos/{item.Id}", TestContext.Current.CancellationToken);
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -22,6 +22,7 @@ public sealed class GetTodoTests : ApiTest
 
         body.ShouldNotBeNull();
         body.ShouldBe(TodoResponse.From(item));
+        body.DueDate.ShouldBe(new DateOnly(2026, 11, 12));
     }
 
     [Fact]

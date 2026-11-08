@@ -11,6 +11,7 @@ public sealed record BoardReadModel(
     IReadOnlyList<TodoItem> Items,
     int TotalCount,
     int OpenCount,
+    int OverdueCount,
     int PercentDone,
     string TodayLabel,
     string EmptyTitle,
@@ -23,6 +24,7 @@ public sealed record BoardReadModel(
     public int CountFor(BoardFilter filter) =>
         filter switch
         {
+            BoardFilter.Overdue => OverdueCount,
             BoardFilter.Done => DoneCount,
             BoardFilter.All => TotalCount,
             _ => OpenCount
@@ -34,10 +36,16 @@ public sealed record BoardReadModel(
         int? editId,
         DateTimeOffset now)
     {
+        var today = DateOnly.FromDateTime(now.DateTime);
+
         var open = all
             .Where(item => !item.Done)
             .OrderByDescending(item => item.Priority)
             .ThenBy(item => item.CreatedAt)
+            .ToArray();
+
+        var overdue = open
+            .Where(item => item.DueDate is { } dueDate && dueDate < today)
             .ToArray();
 
         var done = all
@@ -48,6 +56,7 @@ public sealed record BoardReadModel(
         IReadOnlyList<TodoItem> items = filter switch
         {
             BoardFilter.All => [.. open, .. done],
+            BoardFilter.Overdue => overdue,
             BoardFilter.Done => done,
             _ => open
         };
@@ -60,6 +69,7 @@ public sealed record BoardReadModel(
 
         var (emptyTitle, emptyBody) = filter switch
         {
+            BoardFilter.Overdue => ("Nothing overdue", "Open todos past their due date will collect here."),
             BoardFilter.Done => ("Nothing completed yet", "Finished todos will collect here. Complete one to see it."),
             BoardFilter.All => ("Your list is empty", "Add your first todo above and it will show up here."),
             _ => ("All clear", "There is nothing left to do. Add something new when it comes to mind.")
@@ -67,7 +77,7 @@ public sealed record BoardReadModel(
 
         var edit = editId is { } id
             ? all.FirstOrDefault(item => item.Id == id) is { } item
-                ? new TodoEditState(item.Title, item.Description ?? string.Empty, item.Priority)
+                ? new TodoEditState(item.Title, item.Description ?? string.Empty, item.Priority, item.DueDate)
                 : null
             : null;
 
@@ -75,6 +85,7 @@ public sealed record BoardReadModel(
             items,
             totalCount,
             openCount,
+            overdue.Length,
             percentDone,
             now.ToString("dddd, d MMMM", CultureInfo.InvariantCulture),
             emptyTitle,

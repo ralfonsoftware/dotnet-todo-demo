@@ -24,6 +24,7 @@ public static class PresentationHooks
     public static string FilterValue(BoardFilter filter) =>
         filter switch
         {
+            BoardFilter.Overdue => "overdue",
             BoardFilter.Done => "done",
             BoardFilter.All => "all",
             _ => "open"
@@ -36,6 +37,7 @@ public static class PresentationHooks
     public static BoardFilter ParseFilter(string? value) =>
         value switch
         {
+            "overdue" => BoardFilter.Overdue,
             "done" => BoardFilter.Done,
             "all" => BoardFilter.All,
             _ => BoardFilter.Open

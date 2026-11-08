@@ -30,15 +30,17 @@ public abstract class ApiTest : IDisposable
     protected TodoItem Seed(
         string title = "Seeded todo",
         string? description = null,
-        Priority priority = Priority.Medium) =>
-        Store.Create(Drafts.Of(title, description, priority), Now);
+        Priority priority = Priority.Medium,
+        DateOnly? dueDate = null) =>
+        Store.Create(Drafts.Of(title, description, priority, dueDate), Now);
 
     protected TodoItem SeedCompleted(
         string title = "Seeded todo",
         string? description = null,
-        Priority priority = Priority.Medium)
+        Priority priority = Priority.Medium,
+        DateOnly? dueDate = null)
     {
-        var item = Seed(title, description, priority);
+        var item = Seed(title, description, priority, dueDate);
 
         return Store.Complete(item.Id, Now) switch
         {

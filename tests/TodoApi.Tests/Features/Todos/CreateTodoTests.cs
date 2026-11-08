@@ -30,16 +30,18 @@ public sealed class CreateTodoTests : ApiTest
         body.CompletedAt.ShouldBeNull();
         body.Priority.ShouldBe(Priority.Medium);
         body.Done.ShouldBeFalse();
+        body.DueDate.ShouldBeNull();
 
         var raw = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         JsonDocument.Parse(raw).RootElement.GetProperty("priority").GetString().ShouldBe("medium");
+        JsonDocument.Parse(raw).RootElement.GetProperty("dueDate").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
     [Fact]
     public async Task Create_WithEveryField_StoresNormalisedValues()
     {
         using var response = await PostJson(
-            """{"title":"  Plan sprint  ","description":"  Write stories  ","priority":"HIGH"}""");
+            """{"title":"  Plan sprint  ","description":"  Write stories  ","priority":"HIGH","dueDate":"2026-11-12"}""");
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
 
@@ -50,7 +52,11 @@ public sealed class CreateTodoTests : ApiTest
         body.Title.ShouldBe("Plan sprint");
         body.Description.ShouldBe("Write stories");
         body.Priority.ShouldBe(Priority.High);
+        body.DueDate.ShouldBe(new DateOnly(2026, 11, 12));
         body.Done.ShouldBeFalse();
+
+        var raw = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        JsonDocument.Parse(raw).RootElement.GetProperty("dueDate").GetString().ShouldBe("2026-11-12");
     }
 
     [Fact]

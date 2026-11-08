@@ -14,6 +14,8 @@ public sealed record TodoItem
 
     public Priority Priority { get; init; }
 
+    public DateOnly? DueDate { get; init; }
+
     public bool Done { get; init; }
 
     public TodoItem Complete(DateTimeOffset completedAt) =>

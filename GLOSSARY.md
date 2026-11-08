@@ -5,11 +5,11 @@ A small demo HTTP API for tracking todo items through to completion.
 ## Language
 
 **Todo Item**:
-A unit of work tracked by the API, identified by a number and carrying a title, an optional description, a priority, and its completion state.
+A unit of work tracked by the API, identified by a number and carrying a title, an optional description, a priority, an optional Due Date, and its completion state.
 _Avoid_: Task, to-do, ticket, entry
 
 **Todo Draft**:
-The title, optional description, and Priority supplied when creating or editing a Todo Item, before validation and normalization.
+The title, optional description, Priority, and optional Due Date supplied when creating or editing a Todo Item, before validation and normalization.
 _Avoid_: Request, payload, form input
 
 **Completion**:
@@ -23,6 +23,10 @@ _Avoid_: Completed flag, finished
 **Priority**:
 The urgency level of a Todo Item: Low, Medium, or High, defaulting to Medium when unspecified.
 _Avoid_: Severity, importance, rank
+
+**Due Date**:
+The optional calendar date by which a Todo Item should be done, with no time of day and no time zone.
+_Avoid_: Deadline, due date-time, due timestamp
 
 **Todos Store**:
 The collection holding every Todo Item and the only source of truth for todo state.

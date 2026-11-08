@@ -7,6 +7,7 @@ namespace TodoApi.Pages;
 public enum BoardFilter
 {
     Open,
+    Overdue,
     Done,
     All
 }
