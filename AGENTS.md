@@ -4,6 +4,7 @@ Requires the .NET 10 SDK. From the repo root:
 
 - Build: `dotnet build TodoApi.slnx`
 - Test: `dotnet test TodoApi.slnx`
+- Format check: `dotnet format TodoApi.slnx --verify-no-changes` (style rules live in `.editorconfig`; warnings are errors, see `Directory.Build.props`)
 
 `README.md` covers the run command, URLs, endpoints, telemetry, and test harness.
 
