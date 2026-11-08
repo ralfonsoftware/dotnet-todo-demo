@@ -5,6 +5,7 @@ A small demo REST API for tracking Todo Items through to completion. It is built
 ## Prerequisites
 
 - .NET 10 SDK
+- Docker (optional, for viewing telemetry in the Aspire Dashboard)
 
 ## Run
 
@@ -15,6 +16,52 @@ dotnet run --project src/TodoApi
 - API: `http://localhost:5266` (see the console output for the exact URL)
 - Interactive docs: `http://localhost:5266/scalar`
 - OpenAPI document: `http://localhost:5266/openapi/v1.json`
+
+## Observability
+
+The API exports traces, metrics, and logs over OTLP. To view them, run the Aspire Dashboard in one terminal and the API in another.
+
+Terminal 1 — start the dashboard:
+
+```bash
+./scripts/run-aspire-dashboard.sh
+```
+
+Terminal 2 — start the API and make a request:
+
+```bash
+dotnet run --project src/TodoApi
+curl http://localhost:5266/todos
+```
+
+Open `http://localhost:18888` and select the `todo-api` service. The dashboard shows ASP.NET Core request traces, HttpClient traces, ASP.NET Core/HttpClient/Runtime metrics, and application logs.
+
+The launcher uses the pinned image `mcr.microsoft.com/aspire/dashboard:13.6.4` and maps:
+
+| Purpose | Host | Container |
+| --- | --- | --- |
+| Dashboard UI | `18888` | `18888` |
+| OTLP/gRPC | `4317` | `18889` |
+| OTLP/HTTP | `4318` | `18890` |
+
+Anonymous local access is enabled. The container is removed when it exits or when you press Ctrl+C. The script fails with a clear message if Docker or its daemon is unavailable.
+
+### Configuration
+
+Standard `OTEL_*` environment variables take precedence, then the `OpenTelemetry` section in configuration, then the defaults.
+
+| Setting | Default | Override |
+| --- | --- | --- |
+| Export enablement | enabled outside the `Testing` environment | `OpenTelemetry:Enabled`, `OTEL_SDK_DISABLED=true` |
+| OTLP exporter attached | enabled | `OpenTelemetry:ExporterEnabled` |
+| Endpoint | `http://localhost:4317` | `OpenTelemetry:Endpoint`, `OTEL_EXPORTER_OTLP_ENDPOINT` |
+| Protocol | `grpc` | `OpenTelemetry:Protocol`, `OTEL_EXPORTER_OTLP_PROTOCOL` (`grpc` or `http/protobuf`) |
+| Service name | `todo-api` | `OpenTelemetry:ServiceName`, `OTEL_SERVICE_NAME` |
+| Extra resource attributes | none | `OTEL_RESOURCE_ATTRIBUTES` |
+
+`service.version` comes from the assembly, and `deployment.environment` is the ASP.NET Core environment name. With `http/protobuf`, the default endpoint becomes `http://localhost:4318` when none is configured.
+
+Tests run in the `Testing` environment, which disables both the pipeline and the exporter, so `dotnet test` needs no dashboard and makes no outbound telemetry attempts.
 
 ## Test
 
@@ -77,4 +124,5 @@ curl -X POST http://localhost:5266/todos/1/complete
 - [Glossary](GLOSSARY.md)
 - [ADR-0001: vertical slice architecture](docs/adr/0001-vertical-slice-architecture.md)
 - [ADR-0002: in-memory store](docs/adr/0002-in-memory-store.md)
+- [ADR-0003: OpenTelemetry and the Aspire Dashboard](docs/adr/0003-opentelemetry-and-aspire-dashboard.md)
 - Implementation tickets: [`.scratch/todo-api/issues/`](.scratch/todo-api/issues/)
