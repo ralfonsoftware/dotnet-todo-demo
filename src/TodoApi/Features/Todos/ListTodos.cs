@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Contracts;
+using TodoApi.Logging;
 using TodoApi.Storage;
 
 namespace TodoApi.Features.Todos;
@@ -6,8 +8,18 @@ namespace TodoApi.Features.Todos;
 internal static class ListTodos
 {
     public static void Map(IEndpointRouteBuilder app) =>
-        app.MapGet("/todos", (ITodoStore store) =>
-                TypedResults.Ok(store.GetAll().Select(TodoResponse.From).ToArray()))
+        app.MapGet("/todos", List)
             .WithName("ListTodos")
             .Produces<TodoResponse[]>();
+
+    private static Ok<TodoResponse[]> List(
+        ITodoStore store,
+        ILogger<TodoLogCategory> logger)
+    {
+        var items = store.GetAll();
+
+        TodoLogs.ListSucceeded(logger, TodoOperations.List, items.Count);
+
+        return TypedResults.Ok(items.Select(TodoResponse.From).ToArray());
+    }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Contracts;
+using TodoApi.Logging;
 using TodoApi.Storage;
 
 namespace TodoApi.Features.Todos;
@@ -15,11 +16,18 @@ internal static class CompleteTodo
     private static Results<Ok<TodoResponse>, ProblemHttpResult> Complete(
         int id,
         ITodoStore store,
-        TimeProvider clock)
+        TimeProvider clock,
+        ILogger<TodoLogCategory> logger)
     {
         var item = store.Complete(id, clock.GetUtcNow());
-        return item is null
-            ? TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.")
-            : TypedResults.Ok(TodoResponse.From(item));
+
+        if (item is null)
+        {
+            TodoLogs.NotFound(logger, id, TodoOperations.Complete);
+            return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
+        }
+
+        TodoLogs.CompleteSucceeded(logger, TodoOperations.Complete, item.Id, item.Priority);
+        return TypedResults.Ok(TodoResponse.From(item));
     }
 }

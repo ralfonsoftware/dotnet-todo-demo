@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Contracts;
 using TodoApi.Domain;
+using TodoApi.Logging;
 using TodoApi.Storage;
 
 namespace TodoApi.Features.Todos;
@@ -22,11 +23,13 @@ internal static class UpdateTodo
     private static Results<Ok<TodoResponse>, ValidationProblem, ProblemHttpResult> Update(
         int id,
         UpdateTodoRequest request,
-        ITodoStore store)
+        ITodoStore store,
+        ILogger<TodoLogCategory> logger)
     {
         var errors = TodoInput.Validate(request.Title, request.Description);
         if (errors.Count > 0)
         {
+            TodoLogs.ValidationRejected(logger, TodoOperations.Update, errors.Count);
             return TypedResults.ValidationProblem(errors);
         }
 
@@ -36,8 +39,13 @@ internal static class UpdateTodo
             TodoInput.NormalizeDescription(request.Description),
             request.Priority ?? Priority.Medium);
 
-        return item is null
-            ? TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.")
-            : TypedResults.Ok(TodoResponse.From(item));
+        if (item is null)
+        {
+            TodoLogs.NotFound(logger, id, TodoOperations.Update);
+            return TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: "Todo item not found.");
+        }
+
+        TodoLogs.UpdateSucceeded(logger, TodoOperations.Update, item.Id, item.Priority);
+        return TypedResults.Ok(TodoResponse.From(item));
     }
 }

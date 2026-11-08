@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -27,6 +28,19 @@ public sealed class TelemetryTests
         factory.Services.GetService<MeterProvider>().ShouldNotBeNull();
         factory.Services.GetServices<ILoggerProvider>()
             .ShouldContain(provider => provider is OpenTelemetryLoggerProvider);
+    }
+
+    [Fact]
+    public void OpenTelemetryLogging_ExportsScopesAndFormattedMessages()
+    {
+        using var factory = new TelemetryEnabledFactory();
+
+        var options = factory.Services
+            .GetRequiredService<IOptions<OpenTelemetryLoggerOptions>>()
+            .Value;
+
+        options.IncludeScopes.ShouldBeTrue();
+        options.IncludeFormattedMessage.ShouldBeTrue();
     }
 
     [Fact]

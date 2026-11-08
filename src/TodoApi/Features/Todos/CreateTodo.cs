@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using TodoApi.Contracts;
 using TodoApi.Domain;
+using TodoApi.Logging;
 using TodoApi.Storage;
 
 namespace TodoApi.Features.Todos;
@@ -22,11 +23,13 @@ internal static class CreateTodo
     private static Results<Created<TodoResponse>, ValidationProblem> Create(
         CreateTodoRequest request,
         ITodoStore store,
-        TimeProvider clock)
+        TimeProvider clock,
+        ILogger<TodoLogCategory> logger)
     {
         var errors = TodoInput.Validate(request.Title, request.Description);
         if (errors.Count > 0)
         {
+            TodoLogs.ValidationRejected(logger, TodoOperations.Create, errors.Count);
             return TypedResults.ValidationProblem(errors);
         }
 
@@ -35,6 +38,8 @@ internal static class CreateTodo
             TodoInput.NormalizeDescription(request.Description),
             request.Priority ?? Priority.Medium,
             clock.GetUtcNow());
+
+        TodoLogs.CreateSucceeded(logger, TodoOperations.Create, item.Id, item.Priority);
 
         return TypedResults.Created($"/todos/{item.Id}", TodoResponse.From(item));
     }
