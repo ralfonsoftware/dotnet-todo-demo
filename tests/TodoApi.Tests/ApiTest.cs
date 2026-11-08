@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using TodoApi.Domain;
 using TodoApi.Storage;
@@ -29,6 +30,14 @@ public abstract class ApiTest : IDisposable
         string? description = null,
         Priority priority = Priority.Medium) =>
         Store.Create(title, description, priority, Now);
+
+    protected Task<HttpResponseMessage> SendJsonAsync(HttpMethod method, string url, string json) =>
+        Client.SendAsync(
+            new HttpRequestMessage(method, url)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            },
+            TestContext.Current.CancellationToken);
 
     public void Dispose()
     {

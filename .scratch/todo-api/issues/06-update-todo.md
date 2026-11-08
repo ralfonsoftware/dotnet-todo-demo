@@ -1,6 +1,6 @@
 # 06 — Update todo
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02
 
 ## Scope
@@ -22,3 +22,7 @@ Blocked by: 02
 - Unknown id → `404`.
 - Blank title and `done` in body → `400`.
 - Updating a completed item keeps `done: true` and the original `completedAt`.
+
+## Outcome
+
+`PUT /todos/{id:int}` replaces `title`/`description`/`priority`, applies create defaults, preserves `createdAt` and completion state, and returns `404` ProblemDetails for unknown ids. Covered by 6 tests.
