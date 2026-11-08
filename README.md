@@ -34,7 +34,7 @@ dotnet run --project src/TodoApi
 curl http://localhost:5266/todos
 ```
 
-Open `http://localhost:18888` and select the `todo-api` service. The dashboard shows ASP.NET Core request traces, Todos Store spans nested under them, HttpClient traces, ASP.NET Core/HttpClient/Runtime metrics, and application logs.
+Open `http://localhost:18888` and select the `todo-api` service. The dashboard shows ASP.NET Core request traces, Todos Store spans nested under them, HttpClient traces, ASP.NET Core/HttpClient/Runtime metrics alongside the custom Todo Item lifecycle metrics below, and application logs.
 
 The launcher uses the pinned image `mcr.microsoft.com/aspire/dashboard:13.6.4` and maps:
 
@@ -77,6 +77,24 @@ Every Todos Store operation emits one span from the `TodoApi.TodosStore` activit
 | `todos.delete` | `delete` | `deleted`, `not found` |
 
 `todo.id` carries the Todo Item id when one is involved. `todo.priority` carries `low`, `medium`, or `high` when an item or priority is involved (`get`, `create`, `update`, `complete`, and `delete`); `list` has no single item, so it carries neither tag. Spans never carry the Todo Item title or description.
+
+### Todo Item metrics
+
+The `TodoApi.Todos` meter carries custom metrics for Todo Item lifecycle activity. It is registered with `metrics.AddMeter("TodoApi.Todos")`, so the dashboard shows it alongside the built-in ASP.NET Core, HttpClient, and runtime metrics. Every instrument uses a stable name, unit, and tag key; no title, description, or other user text ever appears in a tag.
+
+| Instrument | Type | Unit | Tags |
+| --- | --- | --- | --- |
+| `todo.items.created` | `Counter<long>` | `{item}` | `todo.priority` (`low`/`medium`/`high`) |
+| `todo.items.completed` | `Counter<long>` | `{item}` | none |
+| `todo.items.deleted` | `Counter<long>` | `{item}` | none |
+| `todo.store.failures` | `Counter<long>` | `{failure}` | `todo.operation`, `todo.outcome` (`not found`) |
+| `todo.items.total` | `ObservableGauge<long>` | `{item}` | none |
+| `todo.items.done` | `ObservableGauge<long>` | `{item}` | none |
+| `todo.store.operation.duration` | `Histogram<double>` | `s` | `todo.operation` |
+
+The counters advance once per successful mutation: `todo.items.created` on Create (tagged with the Priority from the created item), `todo.items.completed` on Completion, and `todo.items.deleted` only when Delete removed an item. A Completion increments `todo.items.completed` only for a real not-Done to Done transition; replaying a Completion on a Done Todo Item is reported as `already done` on the span and does not double count. Failed operations (a not-found Get, Update, Complete, or Delete) increment `todo.store.failures` with `todo.operation` and `todo.outcome`.
+
+The gauges read the raw Todos Store on each collection, so they report the current total number of Todo Items and the current number of Done Todo Items without emitting an extra span or measurement. The duration histogram records every Todos Store operation in seconds (via `Stopwatch.GetElapsedTime`), tagged with `todo.operation`, including operations that end not found.
 
 ## Test
 

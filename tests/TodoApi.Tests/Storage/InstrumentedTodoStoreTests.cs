@@ -5,17 +5,17 @@ using TodoApi.Storage;
 namespace TodoApi.Tests.Storage;
 
 [Collection(TracingCollection.Name)]
-public sealed class TracingTodoStoreTests
+public sealed class InstrumentedTodoStoreTests
 {
     [Fact]
     public void List_EmitsASingleFoundSpan()
     {
-        var store = new TracingTodoStore(new InMemoryTodoStore());
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         store.GetAll();
 
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.list");
         span.GetTagItem("todo.operation").ShouldBe("list");
         span.GetTagItem("todo.outcome").ShouldBe("found");
@@ -28,13 +28,13 @@ public sealed class TracingTodoStoreTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create("Buy milk", "Semi-skimmed", Priority.High, DateTimeOffset.UnixEpoch);
-        var store = new TracingTodoStore(inner);
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(inner);
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         var found = store.Get(item.Id);
 
         found.ShouldBe(item);
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.get");
         span.GetTagItem("todo.operation").ShouldBe("get");
         span.GetTagItem("todo.id").ShouldBe(item.Id);
@@ -45,12 +45,12 @@ public sealed class TracingTodoStoreTests
     [Fact]
     public void Get_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
-        var store = new TracingTodoStore(new InMemoryTodoStore());
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         store.Get(42).ShouldBeNull();
 
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.get");
         span.GetTagItem("todo.operation").ShouldBe("get");
         span.GetTagItem("todo.id").ShouldBe(42);
@@ -61,12 +61,12 @@ public sealed class TracingTodoStoreTests
     [Fact]
     public void Create_EmitsASingleCreatedSpanWithIdAndPriority()
     {
-        var store = new TracingTodoStore(new InMemoryTodoStore());
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         var created = store.Create("Buy milk", "Semi-skimmed", Priority.Low, DateTimeOffset.UnixEpoch);
 
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.create");
         span.GetTagItem("todo.operation").ShouldBe("create");
         span.GetTagItem("todo.id").ShouldBe(created.Id);
@@ -79,13 +79,13 @@ public sealed class TracingTodoStoreTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create("Old title", "Old description", Priority.Low, DateTimeOffset.UnixEpoch);
-        var store = new TracingTodoStore(inner);
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(inner);
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         var updated = store.Update(item.Id, "New title", "New description", Priority.High);
 
         updated.ShouldNotBeNull();
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.update");
         span.GetTagItem("todo.operation").ShouldBe("update");
         span.GetTagItem("todo.id").ShouldBe(item.Id);
@@ -96,12 +96,12 @@ public sealed class TracingTodoStoreTests
     [Fact]
     public void Update_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
-        var store = new TracingTodoStore(new InMemoryTodoStore());
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         store.Update(42, "New title", null, Priority.Medium).ShouldBeNull();
 
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.update");
         span.GetTagItem("todo.operation").ShouldBe("update");
         span.GetTagItem("todo.id").ShouldBe(42);
@@ -114,14 +114,14 @@ public sealed class TracingTodoStoreTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create("Buy milk", null, Priority.High, DateTimeOffset.UnixEpoch);
-        var store = new TracingTodoStore(inner);
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(inner);
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
 
         completed.ShouldNotBeNull();
         completed.Done.ShouldBeTrue();
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.complete");
         span.GetTagItem("todo.operation").ShouldBe("complete");
         span.GetTagItem("todo.id").ShouldBe(item.Id);
@@ -135,14 +135,14 @@ public sealed class TracingTodoStoreTests
         var inner = new InMemoryTodoStore();
         var item = inner.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
         inner.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
-        var store = new TracingTodoStore(inner);
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(inner);
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         var completed = store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(2));
 
         completed.ShouldNotBeNull();
         completed.CompletedAt.ShouldBe(DateTimeOffset.UnixEpoch.AddHours(1));
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.complete");
         span.GetTagItem("todo.operation").ShouldBe("complete");
         span.GetTagItem("todo.id").ShouldBe(item.Id);
@@ -153,12 +153,12 @@ public sealed class TracingTodoStoreTests
     [Fact]
     public void Complete_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
-        var store = new TracingTodoStore(new InMemoryTodoStore());
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         store.Complete(42, DateTimeOffset.UnixEpoch).ShouldBeNull();
 
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.complete");
         span.GetTagItem("todo.operation").ShouldBe("complete");
         span.GetTagItem("todo.id").ShouldBe(42);
@@ -171,12 +171,12 @@ public sealed class TracingTodoStoreTests
     {
         var inner = new InMemoryTodoStore();
         var item = inner.Create("Buy milk", null, Priority.Low, DateTimeOffset.UnixEpoch);
-        var store = new TracingTodoStore(inner);
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(inner);
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         store.Delete(item.Id).ShouldNotBeNull();
 
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.delete");
         span.GetTagItem("todo.operation").ShouldBe("delete");
         span.GetTagItem("todo.id").ShouldBe(item.Id);
@@ -187,12 +187,12 @@ public sealed class TracingTodoStoreTests
     [Fact]
     public void Delete_WhenItemIsMissing_EmitsASingleNotFoundSpan()
     {
-        var store = new TracingTodoStore(new InMemoryTodoStore());
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(new InMemoryTodoStore());
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         store.Delete(42).ShouldBeNull();
 
-        var span = capture.Single(TracingTodoStore.ActivitySourceName);
+        var span = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         span.DisplayName.ShouldBe("todos.delete");
         span.GetTagItem("todo.operation").ShouldBe("delete");
         span.GetTagItem("todo.id").ShouldBe(42);
@@ -204,8 +204,8 @@ public sealed class TracingTodoStoreTests
     public void EachStoreOperation_EmitsExactlyOneSpan()
     {
         var inner = new InMemoryTodoStore();
-        var store = new TracingTodoStore(inner);
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(inner);
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         var item = store.Create("Buy milk", null, Priority.Medium, DateTimeOffset.UnixEpoch);
         store.GetAll();
@@ -214,7 +214,7 @@ public sealed class TracingTodoStoreTests
         store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         store.Delete(item.Id);
 
-        var spans = capture.From(TracingTodoStore.ActivitySourceName);
+        var spans = capture.From(InstrumentedTodoStore.ActivitySourceName);
         spans.Count.ShouldBe(6);
 
         foreach (var operation in new[] { "list", "get", "create", "update", "complete", "delete" })
@@ -230,8 +230,8 @@ public sealed class TracingTodoStoreTests
         const string description = "Private description 5f0c";
 
         var inner = new InMemoryTodoStore();
-        var store = new TracingTodoStore(inner);
-        using var capture = new ActivityCapture(TracingTodoStore.ActivitySourceName);
+        using var store = new InstrumentedTodoStore(inner);
+        using var capture = new ActivityCapture(InstrumentedTodoStore.ActivitySourceName);
 
         var item = store.Create(title, description, Priority.High, DateTimeOffset.UnixEpoch);
         store.GetAll();
@@ -240,7 +240,7 @@ public sealed class TracingTodoStoreTests
         store.Complete(item.Id, DateTimeOffset.UnixEpoch.AddHours(1));
         store.Delete(item.Id);
 
-        var spans = capture.From(TracingTodoStore.ActivitySourceName);
+        var spans = capture.From(InstrumentedTodoStore.ActivitySourceName);
         spans.Count.ShouldBe(6);
 
         foreach (var span in spans)

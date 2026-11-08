@@ -15,7 +15,7 @@ public sealed class TracingIntegrationTests
     public async Task StoreSpan_IsAChildOfTheHttpRequestSpan()
     {
         using var capture = new ActivityCapture(
-            TracingTodoStore.ActivitySourceName,
+            InstrumentedTodoStore.ActivitySourceName,
             "Microsoft.AspNetCore");
         using var factory = new TelemetryEnabledFactory();
         using var client = factory.CreateClient();
@@ -27,7 +27,7 @@ public sealed class TracingIntegrationTests
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        var storeSpan = capture.Single(TracingTodoStore.ActivitySourceName);
+        var storeSpan = capture.Single(InstrumentedTodoStore.ActivitySourceName);
         var serverSpan = capture.From("Microsoft.AspNetCore")
             .Single(activity => activity.Kind == ActivityKind.Server);
 
@@ -51,7 +51,7 @@ public sealed class TracingIntegrationTests
     public async Task CreateCompleteDelete_ProduceOneStoreSpanNestedUnderEachHttpRequest()
     {
         using var capture = new ActivityCapture(
-            TracingTodoStore.ActivitySourceName,
+            InstrumentedTodoStore.ActivitySourceName,
             "Microsoft.AspNetCore");
         using var factory = new TelemetryEnabledFactory();
         using var client = factory.CreateClient();
@@ -74,7 +74,7 @@ public sealed class TracingIntegrationTests
         using var deleteResponse = await client.DeleteAsync($"/todos/{item.Id}", cancellationToken);
         deleteResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        var storeSpans = capture.From(TracingTodoStore.ActivitySourceName);
+        var storeSpans = capture.From(InstrumentedTodoStore.ActivitySourceName);
         storeSpans.Count.ShouldBe(3);
         storeSpans[0].GetTagItem("todo.operation").ShouldBe("create");
         storeSpans[1].GetTagItem("todo.operation").ShouldBe("complete");
@@ -97,7 +97,7 @@ public sealed class TracingIntegrationTests
     {
         using var factory = new TodoApiFactory();
 
-        factory.Services.GetRequiredService<ITodoStore>().ShouldBeOfType<TracingTodoStore>();
+        factory.Services.GetRequiredService<ITodoStore>().ShouldBeOfType<InstrumentedTodoStore>();
         factory.Services.GetRequiredService<InMemoryTodoStore>().ShouldNotBeNull();
     }
 }
