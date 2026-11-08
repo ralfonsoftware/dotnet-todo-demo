@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — Run the Aspire Dashboard and wire OpenTelemetry to it
 
-**Status:** resolved
+Status: resolved
 
 - [x] All new log events use source-generated `LoggerMessage` definitions with stable event IDs and named parameters.
 - [x] Successful create, update, complete, and delete operations log at information level; not-found and validation-rejected outcomes log at warning level; successful reads log at debug level.

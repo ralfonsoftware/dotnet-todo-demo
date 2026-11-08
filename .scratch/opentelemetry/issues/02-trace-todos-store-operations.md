@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — Run the Aspire Dashboard and wire OpenTelemetry to it
 
-**Status:** resolved
+Status: resolved
 
 Instrument once at the Todos Store seam with a decorator around the store, rather than repeating tracing inside every feature slice.
 
