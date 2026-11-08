@@ -15,6 +15,7 @@ builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadReq
 
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
+builder.Services.AddRazorPages();
 builder.Services.AddSingleton<InMemoryTodoStore>();
 builder.Services.AddSingleton<ITodoStore>(services =>
     new InstrumentedTodoStore(services.GetRequiredService<InMemoryTodoStore>()));
@@ -25,10 +26,12 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseStaticFiles();
 
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapTodoEndpoints();
+app.MapRazorPages();
 
 app.Run();
 

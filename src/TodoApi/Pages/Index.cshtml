@@ -1,0 +1,307 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Today";
+
+    var emptyTitle = Model.Filter switch
+    {
+        "done" => "Nothing completed yet",
+        "all" => "Your list is empty",
+        _ => "All clear"
+    };
+
+    var emptyBody = Model.Filter switch
+    {
+        "done" => "Finished todos will collect here. Complete one to see it.",
+        "all" => "Add your first todo above and it will show up here.",
+        _ => "There is nothing left to do. Add something new when it comes to mind."
+    };
+}
+
+<section class="intro">
+    <p class="eyebrow">@Model.TodayLabel</p>
+    <div class="intro-row">
+        <div class="intro-copy">
+            <h1>Today</h1>
+            <p class="lede">A calm place for everything you need to do.</p>
+        </div>
+
+        <div class="day-meter" role="img"
+             aria-label="@Model.DoneCount of @Model.TotalCount todos done, @Model.PercentDone percent">
+            <svg class="ring" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <circle class="ring-track" cx="24" cy="24" r="19" pathLength="100" />
+                <circle class="ring-value" cx="24" cy="24" r="19" pathLength="100"
+                        stroke-dasharray="100" stroke-dashoffset="@(100 - Model.PercentDone)" />
+            </svg>
+            <div class="day-meter-copy">
+                <strong>@Model.PercentDone%</strong>
+                <span>@Model.DoneCount of @Model.TotalCount done</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="composer" id="new" aria-labelledby="composer-title">
+    <h2 class="sr-only" id="composer-title">Add a todo</h2>
+
+    <form method="post" asp-page-handler="Create" asp-route-view="@Model.Filter" class="composer-form">
+        <div class="composer-row">
+            <div class="composer-field">
+                <label class="sr-only" asp-for="NewTitle">Todo title</label>
+                <input asp-for="NewTitle" class="composer-input" placeholder="What needs doing?"
+                       autocomplete="off" maxlength="200" required />
+            </div>
+            <button class="btn btn-primary" type="submit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                     stroke-linecap="round" aria-hidden="true" focusable="false">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span class="btn-label">Add</span>
+            </button>
+        </div>
+
+        <span class="field-error" asp-validation-for="NewTitle"></span>
+
+        <div class="composer-meta">
+            <fieldset class="priority-picker">
+                <legend class="sr-only">Priority</legend>
+                <label class="prio-option prio--low">
+                    <input asp-for="NewPriority" id="new-priority-low" type="radio" value="Low" />
+                    <span>Low</span>
+                </label>
+                <label class="prio-option prio--medium">
+                    <input asp-for="NewPriority" id="new-priority-medium" type="radio" value="Medium" />
+                    <span>Medium</span>
+                </label>
+                <label class="prio-option prio--high">
+                    <input asp-for="NewPriority" id="new-priority-high" type="radio" value="High" />
+                    <span>High</span>
+                </label>
+            </fieldset>
+
+            <details class="notes" open="@(Model.DescriptionHasError ? "open" : null)">
+                <summary>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
+                        <path d="M14 6.5 17.5 10" />
+                    </svg>
+                    Add a note
+                </summary>
+                <label class="sr-only" asp-for="NewDescription">Note</label>
+                <textarea asp-for="NewDescription" class="field-input" rows="2" maxlength="2000"
+                          placeholder="A little more detail (optional)"></textarea>
+                <span class="field-error" asp-validation-for="NewDescription"></span>
+            </details>
+        </div>
+    </form>
+</section>
+
+@if (TempData["Toast"] is string toast)
+{
+    <p class="toast" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M5 12.5l4.2 4.2L19 7" />
+        </svg>
+        @toast
+    </p>
+}
+
+<section class="board" aria-labelledby="board-title">
+    <div class="board-head">
+        <h2 class="sr-only" id="board-title">Todos</h2>
+
+        <nav class="filters" aria-label="Filter todos">
+            <a asp-page="/Index" asp-route-view="open"
+               aria-current="@(Model.Filter == "open" ? "page" : null)">
+                Open <span class="count">@Model.OpenCount</span>
+            </a>
+            <a asp-page="/Index" asp-route-view="done"
+               aria-current="@(Model.Filter == "done" ? "page" : null)">
+                Done <span class="count">@Model.DoneCount</span>
+            </a>
+            <a asp-page="/Index" asp-route-view="all"
+               aria-current="@(Model.Filter == "all" ? "page" : null)">
+                All <span class="count">@Model.TotalCount</span>
+            </a>
+        </nav>
+    </div>
+
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty" data-testid="empty-state">
+            <span class="empty-art" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                     stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                    <rect x="4" y="3.5" width="16" height="17" rx="3" />
+                    <path d="M8 8.5h8M8 12h5M8 15.5h6" />
+                </svg>
+            </span>
+            <h3>@emptyTitle</h3>
+            <p>@emptyBody</p>
+            @if (Model.Filter != "done")
+            {
+                <a href="#new">Add a todo</a>
+            }
+        </div>
+    }
+    else
+    {
+        <ul class="todo-list">
+            @foreach (var item in Model.Items)
+            {
+                var isEditing = Model.EditId == item.Id;
+
+                <li class="todo @(item.Done ? "is-done" : "") @(isEditing ? "is-editing" : "")"
+                    data-testid="todo-item">
+                    @if (isEditing)
+                    {
+                        <form method="post" asp-page-handler="Update" asp-route-id="@item.Id"
+                              asp-route-view="@Model.Filter" class="edit-form">
+                            <div class="edit-grid">
+                                <div class="field span-2">
+                                    <label for="edit-title-@item.Id">Title</label>
+                                    <input class="field-input" id="edit-title-@item.Id" name="editTitle"
+                                           value="@Model.EditTitle" maxlength="200" required autofocus />
+                                </div>
+                                <div class="field span-2">
+                                    <label for="edit-note-@item.Id">Note</label>
+                                    <textarea class="field-input" id="edit-note-@item.Id" name="editDescription"
+                                              rows="2" maxlength="2000">@Model.EditDescription</textarea>
+                                </div>
+                                <div class="field span-2">
+                                    <p class="field-label" id="edit-priority-label-@item.Id">Priority</p>
+                                    <div class="priority-picker" role="radiogroup"
+                                         aria-labelledby="edit-priority-label-@item.Id">
+                                        <label class="prio-option prio--low">
+                                            <input type="radio" name="editPriority" value="Low"
+                                                   checked="@(Model.EditPriority == Priority.Low)" />
+                                            <span>Low</span>
+                                        </label>
+                                        <label class="prio-option prio--medium">
+                                            <input type="radio" name="editPriority" value="Medium"
+                                                   checked="@(Model.EditPriority == Priority.Medium)" />
+                                            <span>Medium</span>
+                                        </label>
+                                        <label class="prio-option prio--high">
+                                            <input type="radio" name="editPriority" value="High"
+                                                   checked="@(Model.EditPriority == Priority.High)" />
+                                            <span>High</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (Model.EditError is not null)
+                            {
+                                <p class="field-error" role="alert">@Model.EditError</p>
+                            }
+
+                            <div class="edit-actions">
+                                <a class="btn btn-ghost btn-sm" asp-page="/Index"
+                                   asp-route-view="@Model.Filter">Cancel</a>
+                                <button class="btn btn-primary btn-sm" type="submit">Save changes</button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="todo-main">
+                            @if (item.Done)
+                            {
+                                <span class="check check--done" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                                         stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                        <path d="M5 12.5l4.2 4.2L19 7" />
+                                    </svg>
+                                </span>
+                            }
+                            else
+                            {
+                                <form method="post" asp-page-handler="Complete" asp-route-id="@item.Id"
+                                      asp-route-view="@Model.Filter" class="check-form">
+                                    <button type="submit" class="check" aria-label="Mark “@item.Title” as done"
+                                            title="Mark as done">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                             stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                                             aria-hidden="true" focusable="false">
+                                            <path d="M5 12.5l4.2 4.2L19 7" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            }
+
+                            <div class="todo-content">
+                                <h3 class="todo-title">
+                                    @if (item.Done)
+                                    {
+                                        <span class="sr-only">Done: </span>
+                                    }
+                                    @item.Title
+                                </h3>
+
+                                @if (!string.IsNullOrWhiteSpace(item.Description))
+                                {
+                                    <p class="todo-desc">@item.Description</p>
+                                }
+
+                                <div class="todo-meta">
+                                    <span class="badge badge--@item.Priority.ToString().ToLowerInvariant()">
+                                        @item.Priority
+                                    </span>
+                                    <span class="meta-dot" aria-hidden="true"></span>
+                                    @if (item is { Done: true, CompletedAt: { } completedAt })
+                                    {
+                                        <span class="meta-text">
+                                            Done
+                                            <time datetime="@completedAt.ToString("O", CultureInfo.InvariantCulture)">
+                                                @completedAt.ToString("d MMM", CultureInfo.InvariantCulture)
+                                            </time>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="meta-text">
+                                            Added
+                                            <time datetime="@item.CreatedAt.ToString("O", CultureInfo.InvariantCulture)">
+                                                @item.CreatedAt.ToString("d MMM", CultureInfo.InvariantCulture)
+                                            </time>
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="todo-actions">
+                                <a class="icon-btn" asp-page="/Index" asp-route-view="@Model.Filter"
+                                   asp-route-edit="@item.Id" aria-label="Edit “@item.Title”" title="Edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+                                         focusable="false">
+                                        <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
+                                        <path d="M14 6.5 17.5 10" />
+                                    </svg>
+                                </a>
+
+                                <form method="post" asp-page-handler="Delete" asp-route-id="@item.Id"
+                                      asp-route-view="@Model.Filter"
+                                      data-confirm="Delete “@item.Title”? This can't be undone.">
+                                    <button type="submit" class="icon-btn icon-btn--danger"
+                                            aria-label="Delete “@item.Title”" title="Delete">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                             aria-hidden="true" focusable="false">
+                                            <path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+                                            <path d="M6.5 7l.8 11.2A2 2 0 0 0 9.3 20h5.4a2 2 0 0 0 2-1.8L17.5 7" />
+                                            <path d="M10.5 11v5M13.5 11v5" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>
