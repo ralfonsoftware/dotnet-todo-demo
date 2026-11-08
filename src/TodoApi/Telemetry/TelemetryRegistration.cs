@@ -1,4 +1,4 @@
-using OpenTelemetry.Exporter;
+using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -35,50 +35,33 @@ public static class TelemetryRegistration
                 })
                 .AddService(options.ServiceName, serviceVersion: options.ServiceVersion));
 
-        void ConfigureExporter(OtlpExporterOptions exporter)
-        {
-            exporter.Endpoint = options.Endpoint;
-            exporter.Protocol = options.Protocol;
-        }
+        openTelemetry.WithTracing(tracing => tracing
+            .AddSource(InstrumentedTodoStore.ActivitySourceName)
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation());
 
-        openTelemetry.WithTracing(tracing =>
-        {
-            tracing.AddSource(InstrumentedTodoStore.ActivitySourceName)
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation();
-
-            if (options.ExporterEnabled)
-            {
-                tracing.AddOtlpExporter(ConfigureExporter);
-            }
-        });
-
-        openTelemetry.WithMetrics(metrics =>
-        {
-            metrics.AddMeter(InstrumentedTodoStore.MeterName)
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                .AddRuntimeInstrumentation();
-
-            if (options.ExporterEnabled)
-            {
-                metrics.AddOtlpExporter(ConfigureExporter);
-            }
-        });
+        openTelemetry.WithMetrics(metrics => metrics
+            .AddMeter(InstrumentedTodoStore.MeterName)
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation());
 
         openTelemetry.WithLogging(
-            logging =>
-            {
-                if (options.ExporterEnabled)
-                {
-                    logging.AddOtlpExporter(ConfigureExporter);
-                }
-            },
-            loggingOptions =>
+            configureBuilder: null,
+            configureOptions: loggingOptions =>
             {
                 loggingOptions.IncludeFormattedMessage = true;
                 loggingOptions.IncludeScopes = true;
             });
+
+        // One exporter for all signals. With http/protobuf it appends the
+        // /v1/traces, /v1/metrics, and /v1/logs paths to the base URL; with
+        // gRPC it uses the base URL unchanged. Never combine it with a
+        // per-signal AddOtlpExporter call: the SDK rejects that mix.
+        if (options.ExporterEnabled)
+        {
+            openTelemetry.UseOtlpExporter(options.Protocol, options.Endpoint);
+        }
 
         return services;
     }
